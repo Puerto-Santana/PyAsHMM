@@ -231,16 +231,16 @@ class KDE_AsHMM:
         
     def gaussian_kernel(self,x):
         """
-        
+        Computes the exponential kernel for the given argument x
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
+        x : TYPE numpy ndarray
+            DESCRIPTION. argument for the Gaussian kernel
 
-        Returns
+        Returns The Gaussian kernel evaluation for the given input
         -------
-        TYPE
+        TYPE numpy ndarray
             DESCRIPTION.
 
         """
@@ -248,24 +248,23 @@ class KDE_AsHMM:
    
     def init_v(self,x,N,h,P):
         """
-        
-
+        A possible way to star the v parameters. Uses the likelihood of the data
+        to determine if an observation belongs to state or to another. 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        N : TYPE
-            DESCRIPTION.
-        h : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
+        x : TYPE numpy ndarray
+            DESCRIPTION. training data
+        N : TYPE int
+            DESCRIPTION. number of hidden states
+        h : TYPE numpy ndarray
+            DESCRIPTION. bandwidths
+        P : TYPE  int
+            DESCRIPTION. maximum lag
 
         Returns
         -------
-        v : TYPE
-            DESCRIPTION.
-
+        v : TYPE numpy ndarray
+            DESCRIPTION. instance rlevancy for each cluster
         """
         index = []
         K = len(x[P])
@@ -511,21 +510,21 @@ class KDE_AsHMM:
       
     def plot_graph(self,route=None,label=None,coef=False,node_siz=800,lab_font_siz=9,edge_font_siz=9):
         """
-        
+        plot all the context-specific Bayesian networks
 
         Parameters
         ----------
-        route : TYPE, optional
-            DESCRIPTION. The default is None.
-        label : TYPE, optional
-            DESCRIPTION. The default is None.
-        coef : TYPE, optional
+        route : TYPE, optional str
+            DESCRIPTION. The default is None. route where to save the plots
+        label : TYPE, optional list
+            DESCRIPTION. The default is None. names of the nodes or variables
+        coef : TYPE, optional bool
             DESCRIPTION. The default is False.
-        node_siz : TYPE, optional
+        node_siz : TYPE, optional int
             DESCRIPTION. The default is 800.
-        lab_font_siz : TYPE, optional
+        lab_font_siz : TYPE, optional int
             DESCRIPTION. The default is 9.
-        edge_font_siz : TYPE, optional
+        edge_font_siz : TYPE, optional int
             DESCRIPTION. The default is 9.
 
         Returns
@@ -1364,17 +1363,17 @@ class forBack:
         
     def gaussian_kernel(self,x):
         """
-        
+        Computes the exponential kernel for the given argument x
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
+        x : TYPE numpy ndarray
+            DESCRIPTION. argument for the Gaussian kernel
 
-        Returns
+        Returns 
         -------
-        TYPE
-            DESCRIPTION.
+        TYPE numpy ndarray
+            DESCRIPTION. The Gaussian kernel evaluation for the given input
 
         """
         return  np.exp(-0.5*x**2)/(np.sqrt(2*np.pi)) 
@@ -1387,24 +1386,24 @@ class forBack:
 
         Parameters
         ----------
-        x : TYPE 
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-        M : TYPE
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        G : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
-        v : TYPE
-            DESCRIPTION.
-        h : TYPE
-            DESCRIPTION.
-        train : TYPE, optional
-            DESCRIPTION. The default is True.
+        x : TYPE numpy ndarray
+            DESCRIPTION. testing dataset
+        y : TYPE numpy ndarray
+            DESCRIPTION. training dataset
+        M : TYPE list
+            DESCRIPTION. list with the list of coefficients
+        p : TYPE numpy ndarray
+            DESCRIPTION. array with the AR order for each variable for each hidden state
+        G : TYPE list
+            DESCRIPTION. list of matrices with the graphs
+        P : TYPE int
+            DESCRIPTION. maximum lag
+        v : TYPE numpy ndarray
+            DESCRIPTION. instance relevancy for each kernel
+        h : TYPE numpy ndarray
+            DESCRIPTION. kernel bandwidths
+        train : TYPE, optional bool
+            DESCRIPTION. The default is True. if training is being performed
 
         Returns
         -------
@@ -1457,36 +1456,37 @@ class forBack:
         
     def score_i_k(self,x,y,M,p,G,P,v,h,i,k,train=True):
         """
-        
+        Score used to compare strcutures duering the SEM algorithm
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-        M : TYPE
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        G : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
-        v : TYPE
-            DESCRIPTION.
-        h : TYPE
-            DESCRIPTION.
-        i : TYPE
-            DESCRIPTION.
-        k : TYPE
-            DESCRIPTION.
+        x : TYPE numpy ndarray
+            DESCRIPTION. testing dataset
+        y : TYPE numpy ndarray
+            DESCRIPTION. training dataset
+        M : TYPE list
+            DESCRIPTION. list with the list of coefficients
+        p : TYPE numpy ndarray
+            DESCRIPTION. array with the AR order for each variable for each hidden state
+        G : TYPE list
+            DESCRIPTION. list of matrices with the graphs
+        P : TYPE int
+            DESCRIPTION. maximum lag
+        v : TYPE numpy ndarray
+            DESCRIPTION. instance relevancy for each kernel
+        h : TYPE numpy ndarray
+            DESCRIPTION. kernel bandwidths
+        i : TYPE int
+            DESCRIPTION. hidden state index 
+        k : TYPE int
+            DESCRIPTION. variable index
         train : TYPE, optional
             DESCRIPTION. The default is True.
 
         Returns
         -------
-        None.
+        TYPE int
+            DESCRIPTION. score of the current structure
 
         """
         dif = x[P:,k][np.newaxis].T- y[P:,k][np.newaxis]
@@ -1513,14 +1513,25 @@ class forBack:
         
                 
         
-    def forward_backward(self,A,pi,O,P): 
+    def forward_backward(self,A,pi,O,P):    
         """
-        Does the scaled forward-backward algorithm using logarithms
+        Performs the forward-backward algorithm 
 
-        Parameters check AR_ASLG_HMM for more information 
+        Parameters
         ----------
-        ps : TYPE, optional int
-            DESCRIPTION. The default is None. index of the initial distibution
+        A : TYPE
+            DESCRIPTION.
+        pi : TYPE
+            DESCRIPTION.
+        O : TYPE
+            DESCRIPTION.
+        P : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
         """
         T = len(O)
         alfa = pi*self.probt[0]
@@ -1551,10 +1562,6 @@ class forBack:
         self.gamma = self.alpha*self.beta/np.sum(self.alpha*self.beta,axis=1)[np.newaxis].T
         self.psi = self.psi*self.gamma.T[np.newaxis].T
         
-    
-    
-    
-    
     def checkzero(self,z):
         """
         Returns a modified vector z with no zero instances
@@ -1747,249 +1754,249 @@ class forBack:
         
 #%%Functions to generate data
 
-def dag_v(G):
-    """
-    Executes the Kahn topological sorting  algorithm. 
+# def dag_v(G):
+#     """
+#     Executes the Kahn topological sorting  algorithm. 
 
-    Parameters
-    ----------
-    G : TYPE numpy array size KxK
-        DESCRIPTION. a graph with K variables
+#     Parameters
+#     ----------
+#     G : TYPE numpy array size KxK
+#         DESCRIPTION. a graph with K variables
 
-    Returns
-    -------
-    list
-        DESCRIPTION. A bool indicating if it is a acyclic graph and a topological sort in L. 
+#     Returns
+#     -------
+#     list
+#         DESCRIPTION. A bool indicating if it is a acyclic graph and a topological sort in L. 
 
-    """
-    G2 = np.copy(G)
-    L = []
-    booli = False
-    ss = np.sum(G2,axis=1)
-    s = np.where(ss==0)[0]
-    while len(s)>0:
-        si = s[0]
-        s = s[1:]
-        L.append(si)
-        indexi = np.where(G2.T[si]==1)[0]
-        for x in indexi:
-            G2[x][si] = 0
-            if np.sum(G2[x])==0:
-                s =np.concatenate([s,[x]])
-    if np.sum(G2)==0:
-        booli = True
-    return [booli,np.array(L)]
+#     """
+#     G2 = np.copy(G)
+#     L = []
+#     booli = False
+#     ss = np.sum(G2,axis=1)
+#     s = np.where(ss==0)[0]
+#     while len(s)>0:
+#         si = s[0]
+#         s = s[1:]
+#         L.append(si)
+#         indexi = np.where(G2.T[si]==1)[0]
+#         for x in indexi:
+#             G2[x][si] = 0
+#             if np.sum(G2[x])==0:
+#                 s =np.concatenate([s,[x]])
+#     if np.sum(G2)==0:
+#         booli = True
+#     return [booli,np.array(L)]
 
-def generate_2D(mean,sigma,k,roots,n,ar_coef):
-    x1 = []
-    lar = len(ar_coef)
-    for t in range(n):
-        if t <lar:
-            x1t = np.random.normal(mean,sigma,1)
-        else:
-            x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.5*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
-            # x1t = np.random.normal(mean+np.dot(ar_coef[::-1],x1[-lar:]),sigma,1)
-            # x1t = np.random.normal(mean,sigma,1)
-        x1.append(x1t)
-    x1 = np.array(x1)
-    x= []
-    for i in range(len(x1)):
-        mean = k
-        for l in roots:
-            mean *= (x1[i]-l)
-        x.append(np.random.normal(mean,1,1))
-    x = np.array(x)
-    data = np.concatenate([x,x1],axis=1)
-    return data
+# def generate_2D(mean,sigma,k,roots,n,ar_coef):
+#     x1 = []
+#     lar = len(ar_coef)
+#     for t in range(n):
+#         if t <lar:
+#             x1t = np.random.normal(mean,sigma,1)
+#         else:
+#             x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.5*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
+#             # x1t = np.random.normal(mean+np.dot(ar_coef[::-1],x1[-lar:]),sigma,1)
+#             # x1t = np.random.normal(mean,sigma,1)
+#         x1.append(x1t)
+#     x1 = np.array(x1)
+#     x= []
+#     for i in range(len(x1)):
+#         mean = k
+#         for l in roots:
+#             mean *= (x1[i]-l)
+#         x.append(np.random.normal(mean,1,1))
+#     x = np.array(x)
+#     data = np.concatenate([x,x1],axis=1)
+#     return data
 
-def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
-    data = np.zeros([0,2])
-    for i in seq:
-        di = generate_2D(means[i],sigmas[i],ks[i],rootss[i],ns[i],ar_coef[i])
-        data = np.concatenate([data,di],axis=0)
-    return data
+# def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
+#     data = np.zeros([0,2])
+#     for i in seq:
+#         di = generate_2D(means[i],sigmas[i],ks[i],rootss[i],ns[i],ar_coef[i])
+#         data = np.concatenate([data,di],axis=0)
+#     return data
 
-def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
-    K = len(G)
-    xt = np.ones([1,K])
-    for i in L:
-        if np.sum(M[i]) ==0 :
-            xt[0][i] = np.random.normal(means[i],sigma[i],1)
-        else:
-            mean  = means[i]
-            for w in range(K):
-                mean += f1(M[i][w]*xt[0][w])
-            for l in range(P):
-                ki = k[i]
-                f2m = M[i][K+l]*f2(seed[-l-1][i])
-                mean += ki*f2m
-            xt[0][i] = np.random.normal(mean,sigma[i],1)
-    return xt
+# def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
+#     K = len(G)
+#     xt = np.ones([1,K])
+#     for i in L:
+#         if np.sum(M[i]) ==0 :
+#             xt[0][i] = np.random.normal(means[i],sigma[i],1)
+#         else:
+#             mean  = means[i]
+#             for w in range(K):
+#                 mean += f1(M[i][w]*xt[0][w])
+#             for l in range(P):
+#                 ki = k[i]
+#                 f2m = M[i][K+l]*f2(seed[-l-1][i])
+#                 mean += ki*f2m
+#             xt[0][i] = np.random.normal(mean,sigma[i],1)
+#     return xt
             
-def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
-    K = ncols 
-    x = np.ones([P,K])*means[np.newaxis]
-    for t in range(nrows):
-        xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
-        x = np.concatenate([x,xt],axis=0)
-    return x
+# def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
+#     K = ncols 
+#     x = np.ones([P,K])*means[np.newaxis]
+#     for t in range(nrows):
+#         xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
+#         x = np.concatenate([x,xt],axis=0)
+#     return x
 
-def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
-    ncols = len(means[0])
-    x = np.zeros([0,ncols])
-    for l in seq:
-        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
-        x = np.concatenate([x,xl],axis=0)
-    return x
-
-
-def square(x):
-    return np.sign(x)*np.abs(x)**2
-
-def sin(x):
-    return np.sin(2*np.pi*0.5*x)
-
-def ide(x):
-    return x
+# def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
+#     ncols = len(means[0])
+#     x = np.zeros([0,ncols])
+#     for l in seq:
+#         xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
+#         x = np.concatenate([x,xl],axis=0)
+#     return x
 
 
-def log_gaussian_kernel(x):
-    return -0.5*(x**2+np.log(2*np.pi))
+# def square(x):
+#     return np.sign(x)*np.abs(x)**2
 
-def gaussian_kernel(x):
-    return np.exp(-0.5*x**2)/np.sqrt(2*np.pi)
+# def sin(x):
+#     return np.sin(2*np.pi*0.5*x)
+
+# def ide(x):
+#     return x
+
+
+# def log_gaussian_kernel(x):
+#     return -0.5*(x**2+np.log(2*np.pi))
+
+# def gaussian_kernel(x):
+#     return np.exp(-0.5*x**2)/np.sqrt(2*np.pi)
      
 
 #%% con más variables
-K = 7
-N=3
-means_g = np.array([ [2.3, 4.2, 3.5, 2.5, 1.2, 1, 2],[-2.1, 3.4, -2.4, 3.2, -4.1, 1 , 2], [-3.5 , -1.3, -4.4 , -0.5, -2.2, 1 , 2] ])
-sigmas_g = np.array( [[0.7, 0.7, 0.8, 0.6, 1,0.5,0.6],[ 1, 0.8, 1.0 ,0.9 ,0.8,0.5,0.6], [0.8, 0.5, 1.0, 1.0, 0.8,0.5,0.6]])
-k = np.array([ 3, 2, 1, 3, 2, 1 ,1])
-G          = np.zeros([3,7,7])
-G[1][1][0] = 1; G[1][3][2]=1; G[1][4][0]=1 
-G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
-L          = []
-for i in range(3):
-    lel = dag_v(G[i])
-    print(lel[0])
-    L.append(lel[1])
-L            = np.array(L)
-P            = 2
-p            = [[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]]
-MT            = np.zeros([N,K,K+P])
-MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
-MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
-MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.89; MT[2][4][5] = 0.5
-nses         = [100,200,300]
-seqss        = [0,1,2,1,0,2,0]
-data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
-lengths_gen  = np.array([len(data_gen)])
+# K = 7
+# N=3
+# means_g = np.array([ [2.3, 4.2, 3.5, 2.5, 1.2, 1, 2],[-2.1, 3.4, -2.4, 3.2, -4.1, 1 , 2], [-3.5 , -1.3, -4.4 , -0.5, -2.2, 1 , 2] ])
+# sigmas_g = np.array( [[0.7, 0.7, 0.8, 0.6, 1,0.5,0.6],[ 1, 0.8, 1.0 ,0.9 ,0.8,0.5,0.6], [0.8, 0.5, 1.0, 1.0, 0.8,0.5,0.6]])
+# k = np.array([ 3, 2, 1, 3, 2, 1 ,1])
+# G          = np.zeros([3,7,7])
+# G[1][1][0] = 1; G[1][3][2]=1; G[1][4][0]=1 
+# G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
+# L          = []
+# for i in range(3):
+#     lel = dag_v(G[i])
+#     print(lel[0])
+#     L.append(lel[1])
+# L            = np.array(L)
+# P            = 2
+# p            = [[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]]
+# MT            = np.zeros([N,K,K+P])
+# MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
+# MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
+# MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.89; MT[2][4][5] = 0.5
+# nses         = [100,200,300]
+# seqss        = [0,1,2,1,0,2,0]
+# data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+# lengths_gen  = np.array([len(data_gen)])
 
 
-model1 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
-model1.EM()
+# model1 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
+# model1.EM()
 
-model2 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
-model2.SEM()
+# model2 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
+# model2.SEM()
 
-model3 = hmm(data_gen, lengths_gen, 3,P=P)
-model3.EM()
+# model3 = hmm(data_gen, lengths_gen, 3,P=P)
+# model3.EM()
 
-model4 = hmm(data_gen, lengths_gen, 3)
-model4.SEM()
+# model4 = hmm(data_gen, lengths_gen, 3)
+# model4.SEM()
 
-model5 = KDE_AsHMM(data_gen, lengths_gen, 3,p=p,G=G,P=P)
-model5.EM()
+# model5 = KDE_AsHMM(data_gen, lengths_gen, 3,p=p,G=G,P=P)
+# model5.EM()
 
-model6 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
-
-
-data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
-ll1 = model1.log_likelihood(data_gen_test )
-ll2 = model2.log_likelihood(data_gen_test )
-ll3 = model3.log_likelihood(data_gen_test )
-ll4 = model4.log_likelihood(data_gen_test )
-ll5 = model5.log_likelihood(data_gen_test )
-ll6 =  model6.log_likelihood(data_gen_test )
-print("Likelihood KDE-HMM:               "+ str(ll1))
-print("Likelihood KDE-AsHMM:             "+ str(ll2))
-print("Likelihood HMM:                   "+ str(ll3))
-print("Likelihood AR-AsLG-HMM:           "+ str(ll4))
-print("Likelihood KDE-HMM with known BN: "+ str(ll5))
-print("Likelihood KDE-HMM no train:      "+ str(ll6))
-# Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
-# Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
-# debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
+# model6 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
 
 
-#%% generar datos
-means =  [0.5,1.5,5.5]
-sigmas = [1.0,0.8,0.7]
-ks = [5,-5,2.5]
-rootss = [[2,-1],[0,3],[5,6]]
-ns =  [200,200,200]  #entre menos valores, mas estructura aparece y es más importante, entre más datos, la estrucutra deja de ser relevante
-ar_coef = [[0.4,0.5],[-0.4,-0.2],[0.6,0]]
-seq = [0,1,2,1,0,2,1,2,2,1,1]
-data = generate_2D_seq(means, sigmas, ks, rootss, ns,ar_coef, seq)
-lengths = np.array([len(data)])
-plt.figure("Data scatter")
-plt.clf()
-plt.title("Distribution from samples")
-plt.scatter(data[:,0],data[:,1])
-plt.grid("on")
-plt.xlabel("$x_1$")
-plt.ylabel("$x_2$")
-plt.tight_layout()
-P=2
-k  = 0 
-ar = 1
-plt.figure("Data scatter AR")
-plt.clf()
-plt.scatter(data[ar:,k],data[:-ar,k])
-plt.grid("on")
-plt.xlabel("$x_{"+str(k)+"}^{t}$")
-plt.ylabel("$x_{"+str(k)+"}^{t-"+str(ar)+"}$")
-plt.tight_layout()
-root = r"C:\Users\fox_e\Dropbox\Doctorado\Software\HMM_develop\C\C++"
-np.savetxt(root + r'\prueba.csv',data,delimiter = ",")
-
-model1 = KDE_AsHMM(data, 3,P=P)
-model1.EM()
-
-model2 = KDE_AsHMM(data, 3,P=P)
-model2.SEM()
+# data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+# ll1 = model1.log_likelihood(data_gen_test )
+# ll2 = model2.log_likelihood(data_gen_test )
+# ll3 = model3.log_likelihood(data_gen_test )
+# ll4 = model4.log_likelihood(data_gen_test )
+# ll5 = model5.log_likelihood(data_gen_test )
+# ll6 =  model6.log_likelihood(data_gen_test )
+# print("Likelihood KDE-HMM:               "+ str(ll1))
+# print("Likelihood KDE-AsHMM:             "+ str(ll2))
+# print("Likelihood HMM:                   "+ str(ll3))
+# print("Likelihood AR-AsLG-HMM:           "+ str(ll4))
+# print("Likelihood KDE-HMM with known BN: "+ str(ll5))
+# print("Likelihood KDE-HMM no train:      "+ str(ll6))
+# # Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
+# # Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
+# # debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
 
 
-G2 = []
-for i in range(3):
-    Gi = np.array([[0,1],[0,0]])
-    G2.append(Gi)
-p2 = [[2,0],[2,0],[1,0]]
+# #%% generar datos
+# means =  [0.5,1.5,5.5]
+# sigmas = [1.0,0.8,0.7]
+# ks = [5,-5,2.5]
+# rootss = [[2,-1],[0,3],[5,6]]
+# ns =  [200,200,200]  #entre menos valores, mas estructura aparece y es más importante, entre más datos, la estrucutra deja de ser relevante
+# ar_coef = [[0.4,0.5],[-0.4,-0.2],[0.6,0]]
+# seq = [0,1,2,1,0,2,1,2,2,1,1]
+# data = generate_2D_seq(means, sigmas, ks, rootss, ns,ar_coef, seq)
+# lengths = np.array([len(data)])
+# plt.figure("Data scatter")
+# plt.clf()
+# plt.title("Distribution from samples")
+# plt.scatter(data[:,0],data[:,1])
+# plt.grid("on")
+# plt.xlabel("$x_1$")
+# plt.ylabel("$x_2$")
+# plt.tight_layout()
+# P=2
+# k  = 0 
+# ar = 1
+# plt.figure("Data scatter AR")
+# plt.clf()
+# plt.scatter(data[ar:,k],data[:-ar,k])
+# plt.grid("on")
+# plt.xlabel("$x_{"+str(k)+"}^{t}$")
+# plt.ylabel("$x_{"+str(k)+"}^{t-"+str(ar)+"}$")
+# plt.tight_layout()
+# root = r"C:\Users\fox_e\Dropbox\Doctorado\Software\HMM_develop\C\C++"
+# np.savetxt(root + r'\prueba.csv',data,delimiter = ",")
 
-model3 = hmm(data, lengths, 3,P=P)
-model3.EM()
+# model1 = KDE_AsHMM(data, 3,P=P)
+# model1.EM()
 
-model4 = hmm(data, lengths, 3,P=P)
-model4.SEM()
+# model2 = KDE_AsHMM(data, 3,P=P)
+# model2.SEM()
 
-model5 = KDE_AsHMM(data, lengths, 3,p=p2,G=G2,P=P)
-model5.EM()
 
-#%% Comparación likelihood
-ns_test =  [600,400,700]
-test_data = generate_2D_seq(means, sigmas, ks, rootss, ns_test, ar_coef,seq)
-ll1 = model1.log_likelihood(test_data)
-ll2 = model2.log_likelihood(test_data)
-ll3 = model3.log_likelihood(test_data)
-ll4 = model4.log_likelihood(test_data)
-ll5 = model5.log_likelihood(test_data)
+# G2 = []
+# for i in range(3):
+#     Gi = np.array([[0,1],[0,0]])
+#     G2.append(Gi)
+# p2 = np.array([[2,0],[2,0],[1,0]])
 
-print("Likelihood KDE-HMM:         "+ str(ll1))
-print("Likelihood KDE-AsHMM:       "+ str(ll2))
-print("Likelihood HMM:             "+ str(ll3))
-print("Likelihood AR-AsLG-HMM:     "+ str(ll4))
-print("Likelihood KDE-HMM BN know: "+ str(ll5))
+# model3 = hmm(data, lengths, 3,P=P)
+# model3.EM()
+
+# model4 = hmm(data, lengths, 3,P=P)
+# model4.SEM()
+
+# model5 = KDE_AsHMM(data, 3,p=p2,G=G2,P=P)
+# model5.EM()
+
+# #%% Comparación likelihood
+# ns_test =  [600,400,700]
+# test_data = generate_2D_seq(means, sigmas, ks, rootss, ns_test, ar_coef,seq)
+# ll1 = model1.log_likelihood(test_data)
+# ll2 = model2.log_likelihood(test_data)
+# ll3 = model3.log_likelihood(test_data)
+# ll4 = model4.log_likelihood(test_data)
+# ll5 = model5.log_likelihood(test_data)
+
+# print("Likelihood KDE-HMM:         "+ str(ll1))
+# print("Likelihood KDE-AsHMM:       "+ str(ll2))
+# print("Likelihood HMM:             "+ str(ll3))
+# print("Likelihood AR-AsLG-HMM:     "+ str(ll4))
+# print("Likelihood KDE-HMM BN know: "+ str(ll5))
         
         
         
