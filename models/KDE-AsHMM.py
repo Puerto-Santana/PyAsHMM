@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug  2 14:19:45 2022
-
-@author: fox_e
+Created on Fri August 24 14:07:03 2022
+@author: Carlos Puerto-Santana at KTH royal institute of technology, Stockholm, Sweden
+@Licence: CC BY 4.0
 """
 import pickle
 import datetime
@@ -14,86 +14,162 @@ import matplotlib.pyplot as plt
 from AR_ASLG_HMM  import AR_ASLG_HMM  as hmm
 class KDE_AsHMM:    
     def __init__(self,O,N,A=None, pi=None, h= None, M=None, v=None, 
-                  p=None, P=None, G=None, sigma=None,p_cor=5,struc=True,lags=True):
+                  p=None, P=None, G=None, p_cor=5,struc=True,lags=True):
         """
-        Creates and object of type KDE-AsHMM
-        
-        This models assumes that for each hidden state 
+        Generates an object of type KDE-AsHMM 
+
         Parameters
         ----------
-        O : TYPE
-            DESCRIPTION.
-        lengths : TYPE
-            DESCRIPTION.
-        N : TYPE
-            DESCRIPTION.
-        A : TYPE, optional
-            DESCRIPTION. The default is None.
-        pi : TYPE, optional
-            DESCRIPTION. The default is None.
-        h : TYPE, optional
-            DESCRIPTION. The default is None.
-        M : TYPE, optional
-            DESCRIPTION. The default is None.
-        v : TYPE, optional
-            DESCRIPTION. The default is None.
-        p : TYPE, optional
-            DESCRIPTION. The default is None.
-        P : TYPE, optional
-            DESCRIPTION. The default is None.
-        G : TYPE, optional
-            DESCRIPTION. The default is None.
-        sigma : TYPE, optional
-            DESCRIPTION. The default is None.
-        p_cor : TYPE, optional
-            DESCRIPTION. The default is 5.
-        struc : TYPE, optional
-            DESCRIPTION. The default is True.
-        lags : TYPE, optional
-            DESCRIPTION. The default is True.
+        O : TYPE numpy array 2D
+            DESCRIPTION training data, files are instances and columns variables
+        N : TYPE integer positive
+            DESCRIPTION. Number of hidden states
+        A : TYPE, optional  numpy array 2D
+            DESCRIPTION. The default is None. Transition Matrix of size NxN
+        pi : TYPE, optional numpy array 1D
+            DESCRIPTION. The default is None. Initial distribution vector of size N
+        h : TYPE, optional  numpy array 2D
+            DESCRIPTION. The default is None. Initial bandwidths of size NxK
+        M : TYPE, optional list of lists
+            DESCRIPTION. The default is None. List of size NxK lists with the coefficients of dependencies
+        v : TYPE, optional numpy array 2D
+            DESCRIPTION. The default is None. Kernel mixture weights, size (T-P)xK, recommended to fix P also
+        p : TYPE, optional numpy array 2D
+            DESCRIPTION. The default is None. matrix of AR dependencies of size NxK
+        P : TYPE, optional numpy array 2D
+            DESCRIPTION. The default is None. Maximum lag 
+        G : TYPE, optional list of lists
+            DESCRIPTION. The default is None. list of size N with binary matrices of size KxK
+        p_cor : TYPE, optional int
+            DESCRIPTION. The default is 5. maximum correlation order to determine P
+        struc : TYPE, optional bool
+            DESCRIPTION. The default is True. Enables structural optimization 
+        lags : TYPE, optional bool
+            DESCRIPTION. The default is True. Enables AR order optimization
 
         Returns
         -------
         None.
 
         """
-        self.O = O
-        self.N = N
-        self.struc   = struc    
-        self.lags    = lags    
-        self.K       = len(O[0]) 
-        self.min_h = np.zeros(self.K)
         
+        # Insert training data
+        if type(O) is np.ndarray:
+            if len(O.shape) == 2:
+                self.O = O
+            else:
+                raise Exception("Invalid data dimension, it must has 2 dimensions")
+        else:
+           raise Exception("Invalid data input")
+           
+         # Insert number of hidden states
+        if type(N) is int:
+            if N> 0:
+                self.N = N
+            else:
+                raise Exception("Number of hidden states must be positive")
+        else:
+            raise Exception("Number of hidden states must be a positive integer")
+            
+        # Insert data length and number of variables
+        self.length = len(O)
+        self.K       = len(O[0]) 
+        self.forback = []
+        
+        # Optimization parameters
+        if type(struc) is bool :
+            self.struc   = struc    
+        else:
+            raise Exception("Struc must be a boolean")
+            
+        if type(lags) is bool:   
+            self.lags    = lags   
+        else:
+            raise Exception("lags must be a boolean")
+        
+        # Setting maximum allowed AR values
         if P is None:
             self.P = self.det_lags(p_cor=p_cor)
         else:
-            self.P = P
+            if type(P) is int:
+                if P>=0:
+                    self.P = P
+                else:
+                    raise Exception("Maximum lag P must be greater or equal to zero")
+            else:
+                raise Exception("Maximum lag  P must be an integer")
+                
+        # Auxiliary model for transition matrix
         if v is None or A is None:
             aux_model = hmm(O,lengths,N,P=self.P)
             aux_model.EM()
             
-        self.forback = []
-        self.C = None
+        
+        # Setting the bandwidths    
         if h is None:
             self.h = np.ones([self.N,self.K])*(4*np.std(O,axis=0)**5/(3*np.sum(lengths)))**(1./5.)
         else:
-            self.h = h
+            if type(h) is np.ndarray:
+                if len(h.shape) ==2:
+                    if len(h) == self.N and len(h[0]) ==self.K:
+                        self.h = h
+                    else:
+                        raise Exception("Input h does not match the dimensions NxK")
+                else:
+                    raise Exception("Input h has more or less than 2 dimensions")
+            else:
+                raise Exception("Input h must be a numpy array of 2 dimensions")
+                
+        #  Setting the AR orders
         if p is None:
             if lags == True:
                 self.p = np.zeros([N,self.K]).astype(int)
             if lags == False:
                 self.p = (self.P*np.ones([N,self.K])).astype(int)
         else:
-            self.p = p
+            if type(p)  is np.ndarray:
+                if len(p.shape) == 2:
+                    if np.sum(p<0) == 0:
+                        self.p = p
+                    else:
+                        raise Exception("No negative values in p are allowed")
+                else:
+                    raise Exception("p must hast two dimensions")
+            else:
+                raise Exception("p must be a numpy array")
+            
+        # Setting the initial transition matrix
         if  A is None:
             Ap = aux_model.A
             self.A = Ap
         else:
-            self.A = A
+            if type(A) is np.ndarray:
+                if len(A.shape) == 2:
+                    if np.sum(p<0) == 0:
+                        self.A = A
+                    else:
+                        raise Exception("No negative values in A are allowed")
+                else:
+                    raise Exception("A must hast two dimensions")
+            else:
+                raise Exception("A must be a numpy array")
+            
+        # Setting the initial distribution vector
         if pi is None:
             self.pi = np.ones(N)/N
         else:
-            self.pi= pi
+            if type(pi) is np.ndarray:
+                if len(pi.shape) == 1:
+                    if np.sum(pi<0) == 0:
+                        self.pi = pi
+                    else:
+                        raise Exception("No negative values in pi are allowed")
+                else:
+                    raise Exception("pi must hast one dimensions")
+            else:
+                raise Exception("pi must be a numpy array")
+            
+        # Setting the list of graphs 
         if G is None:
             G = self.prior_G(N,self.K)
             L= []
@@ -102,21 +178,22 @@ class KDE_AsHMM:
             self.G = G
             self.L = L
         else:
-            self.G = G
             self.L = []
             if len(G) != self.N:
-                print( "Invalid G")
+                 raise Exception("G must be a list of N components")
             else:
                 for i in range(self.N):
-                    if np.prod(G[i].shape) != self.K**2 or len(G[i]) != self.K or  len(G[i].T) != self.K  :
-                        print("Invalid G")
+                    if len(G[i]) != self.K or  len(G[i].T) != self.K  :
+                        raise Exception("G at component "+ str(i) +"  is not of shape KxK")
             for i in range(self.N):
                 booli, Li = self.dag_v(G[i])
                 if booli == True:
                     self.L.append(Li)
                 else:
-                   print("G at state "+ str(i) + " is not a DAG")
+                   raise Exception("G at component "+ str(i) +"  is not a DAG")
+            self.G = G
                 
+        # setting the dependencies coefficients
         if M is None:
             M = []
             for i in range(self.N):
@@ -128,22 +205,68 @@ class KDE_AsHMM:
             self.M = M
         else:
             self.M= M
+            
+        # Setting the kernel mixture coefficients
         if v is None:
             # self.v = self.init_v(self.O, self.N, self.h[0], self.P)
             # vv = aux_model.forBack[0].gamma
             # vv = vv/np.sum(vv,axis=0)
             # self.v  = vv
-            vv = np.random.uniform(0.01,0.99,[np.sum(lengths)-self.P,3])
+            vv = np.random.uniform(0.01,0.99,[self.length-self.P,3])
             self.v = vv/np.sum(vv,axis=0)
         else:
-            self.v = v
+            if type(v) is np.ndarray:
+                if len(pi.shape) == 2:
+                    if np.sum(v<0) == 0:
+                        self.v = v 
+                        print("v must be of size T-P, it is recommended to fix P as well")
+                    else:
+                        raise Exception("No negative values in pi are allowed")
+                else:
+                    raise Exception("pi must hast one dimensions")
+            else:
+                raise Exception("pi must be a numpy array")
                     
         print("Priors generated...")
         
     def gaussian_kernel(self,x):
+        """
+        
+
+        Parameters
+        ----------
+        x : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
         return  np.exp(-0.5*x**2)/(np.sqrt(2*np.pi)) 
    
     def init_v(self,x,N,h,P):
+        """
+        
+
+        Parameters
+        ----------
+        x : TYPE
+            DESCRIPTION.
+        N : TYPE
+            DESCRIPTION.
+        h : TYPE
+            DESCRIPTION.
+        P : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        v : TYPE
+            DESCRIPTION.
+
+        """
         index = []
         K = len(x[P])
         for n in range(N):
@@ -388,16 +511,26 @@ class KDE_AsHMM:
       
     def plot_graph(self,route=None,label=None,coef=False,node_siz=800,lab_font_siz=9,edge_font_siz=9):
         """
-        Plots all the learned graphs
+        
 
         Parameters
         ----------
-        route : TYPE, optional str
-            DESCRIPTION. The default is None. direction where to save the graphs
-        label : TYPE, optional list
-            DESCRIPTION. The default is None. labels for the variables. It must be of size K
-        coef : TYPE, optional  bool
-            DESCRIPTION. The default is False. Adds the weights of the arcs to the plots
+        route : TYPE, optional
+            DESCRIPTION. The default is None.
+        label : TYPE, optional
+            DESCRIPTION. The default is None.
+        coef : TYPE, optional
+            DESCRIPTION. The default is False.
+        node_siz : TYPE, optional
+            DESCRIPTION. The default is 800.
+        lab_font_siz : TYPE, optional
+            DESCRIPTION. The default is 9.
+        edge_font_siz : TYPE, optional
+            DESCRIPTION. The default is 9.
+
+        Returns
+        -------
+        None.
 
         """
         if route is not  None:
@@ -448,15 +581,12 @@ class KDE_AsHMM:
     
     def climb_ar(self):
         """
-        Looks for the best structure in AR components. 
-        Uses a greedy search
+        
 
-        Parameters
-        ----------
-        tb : TYPE boolean list 
-            DESCRIPTION. indices to be updated of the parameter B
-        ts : TYPE boolean list
-            DESCRIPTION. indices to be updated of the parameter sigma
+        Returns
+        -------
+        None.
+
         """
         for i in range(self.N):
             for k in range(self.K):
@@ -473,15 +603,9 @@ class KDE_AsHMM:
                         self.p = p2
                         self.M = M2
                         sm  = s2
-                        # print(str(i)+":"+str(k)+", current score: " +str(sm))
                     else:
                         break
-        # tock = time.time()
-        # print("AR optimization ended, took: "+str(round(tock-tick,6))+"s")
-        
-                
-
-    
+            
     def pos_ads(self,G):
         """
         Used to look for the next arcs to add to a graph
@@ -554,14 +678,12 @@ class KDE_AsHMM:
                
     def hill_climb(self):
         """
-        Executes a greedy forward algorithm to explore the Bayesian networks space.
+        
 
-        Parameters
-        ----------
-        tb : TYPE boolean list 
-            DESCRIPTION. indices to be updated of the parameter B
-        ts : TYPE boolean list
-            DESCRIPTION. indices to be updated of the parameter sigma
+        Returns
+        -------
+        None.
+
         """
         if self.lags is True:
             self.climb_ar()
@@ -571,32 +693,51 @@ class KDE_AsHMM:
 
     def act_probt(self):
         """
-        Updates the temporal probability ( i.e., the mean for each time instance, hidden state and variable,) parameter of each forBack object
-        Parameters
-        ----------
-        G : TYPE list
-            DESCRIPTION. list with numpy arrays of size KxK
-        B : TYPE list
-            DESCRIPTION. list of lists with the emission parameters
-        p : TYPE numpy array of size NxK
-            DESCRIPTION. matrix of number of AR values
-        """  
+        
+
+        Returns
+        -------
+        None.
+
+        """
         self.forback[0].prob_t(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h)
 
 
 
     def act_gamma(self):
         """
-        Updates for each forBack object its gamma parameter or latent probabilities
+        
 
-        Parameters
-        ---------- x,G,p,P,h,v
-        ps : TYPE, optional int
-            DESCRIPTION. The default is None. index of the initial distibution
+        Returns
+        -------
+        None.
+
         """
-        self.forback[i].forward_backward(self.A,self.pi,self.O,self.P)
+        self.forback[0].forward_backward(self.A,self.pi,self.O,self.P)
             
     def act_params(self,curr_G,G,curr_p,p,method=0):
+        """
+        
+
+        Parameters
+        ----------
+        curr_G : TYPE
+            DESCRIPTION.
+        G : TYPE
+            DESCRIPTION.
+        curr_p : TYPE
+            DESCRIPTION.
+        p : TYPE
+            DESCRIPTION.
+        method : TYPE, optional
+            DESCRIPTION. The default is 0.
+
+        Returns
+        -------
+        list
+            DESCRIPTION.
+
+        """
         self.forback[0].update_params(self.O,curr_G,G,curr_p,p,self.P,self.M,self.h)
         numh =self.forback[0].numh
         denh =self.forback[0].denh
@@ -625,17 +766,12 @@ class KDE_AsHMM:
     
     def act_A(self):
         """
-        Updates the parameter A
-
-        Parameters
-        ----------
-        ta : TYPE boolean list
-            DESCRIPTION. list that gives the indices of rows and columns of A to be updated.
+        
 
         Returns
         -------
-        A : TYPE numpy array of size NxN
-            DESCRIPTION. The updated transition matrix
+        A : TYPE
+            DESCRIPTION.
 
         """
         self.forback[0].act_aij(self.A,self.N,self.O,self.P)
@@ -653,12 +789,12 @@ class KDE_AsHMM:
     
     def act_pi(self):
         """
-        Updates the initial distribution parameters
+        
 
         Returns
         -------
-        npi : TYPE numpy array of size N
-            DESCRIPTION. The updated  initial distribution
+        api : TYPE
+            DESCRIPTION.
 
         """
         api = self.forback[0].gamma[0]
@@ -667,6 +803,23 @@ class KDE_AsHMM:
 
     
     def EM(self,its=50,err=9e-1,plot=False):
+        """
+        
+
+        Parameters
+        ----------
+        its : TYPE, optional
+            DESCRIPTION. The default is 50.
+        err : TYPE, optional
+            DESCRIPTION. The default is 9e-1.
+        plot : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
         print("EM optimization...")
         tick = time.time()
         tempa =self.A
@@ -701,7 +854,6 @@ class KDE_AsHMM:
                 temph = self.h
                 tempv = self.v
                 tempM = self.M
-#            print likeli
             if plot == True:
                 for gg in range(self.K):
                     for ff in range(gg+1,self.K):
@@ -719,28 +871,25 @@ class KDE_AsHMM:
         
     def SEM(self,err1=9e-1,err2=9e-1,its1=1,its2=50,plot=False): 
         """
-        Does the SEM algorithm for parameter and structure learning
+        
 
         Parameters
         ----------
-        err1 : TYPE, optional float
-            DESCRIPTION. The default is 1e-2. Maximum SEM error allowed
-        err2 : TYPE, optional float
-            DESCRIPTION. The default is 1e-2. Maximum EM error allowed
-        its1 : TYPE, optional int
-            DESCRIPTION. The default is 100. Maximum SEM iterations
-        its2 : TYPE, optional int
-            DESCRIPTION. The default is 100. Maximum EM iterations 
-        ta : TYPE, optional  boolean list
-            DESCRIPTION. The default is "all".  list that gives the indices of rows and columns of A to be updated.
-        tpi : TYPE, optional bool
-            DESCRIPTION. The default is True. Updates or not the initial distribution
-        tb : TYPE, optional boolean list
-            DESCRIPTION. The default is "all". indices to be updated of the parameter B
-        ts : TYPE, optional boolean list
-            DESCRIPTION. The default is "all". list that gives the indices of which hidden-states variances are updated 
-        ps : TYPE, optional int
-            DESCRIPTION. The default is None. index of the initial distibution
+        err1 : TYPE, optional
+            DESCRIPTION. The default is 9e-1.
+        err2 : TYPE, optional
+            DESCRIPTION. The default is 9e-1.
+        its1 : TYPE, optional
+            DESCRIPTION. The default is 1.
+        its2 : TYPE, optional
+            DESCRIPTION. The default is 50.
+        plot : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        None.
+
         """
         eps = 1e100
         self.git = 0
@@ -761,27 +910,24 @@ class KDE_AsHMM:
     
     def viterbi(self,x,plot=True,xlabel="Time units",ylabel="index"): 
         """
-        Computes the most likely sequence of hidden states 
+        
 
         Parameters
         ----------
-        O : TYPE numpy array of size TxK
-            DESCRIPTION. testing dataset
-        plot : TYPE, optional bool
-            DESCRIPTION. The default is True. 
-        maxg : TYPE, optional bool
-            DESCRIPTION. The default is False. Uses max in the labelling 
-        absg : TYPE, optional bool
-            DESCRIPTION. The default is True. Uses absolute value in the labelling
-        indexes : TYPE, optional bool
-            DESCRIPTION. The default is False. Report indexes instead of labels
-        ps : TYPE, optional int
-            DESCRIPTION. The default is None. Uses a different initial distribution
+        x : TYPE
+            DESCRIPTION.
+        plot : TYPE, optional
+            DESCRIPTION. The default is True.
+        xlabel : TYPE, optional
+            DESCRIPTION. The default is "Time units".
+        ylabel : TYPE, optional
+            DESCRIPTION. The default is "index".
 
-        Returns 
+        Returns
         -------
-        TYPE numpy array of size T 
-            DESCRIPTION. Most likely sequence of hidden states
+        TYPE
+            DESCRIPTION.
+
         """
         T =len(x)
         fb = forBack()
@@ -833,22 +979,17 @@ class KDE_AsHMM:
         """
         return np.max(delta+np.log(self.A.T),axis=1)+np.log(fb.probt[t])
     
-    def log_likelihood(self,y,xunit=False,ps = None):
+    def log_likelihood(self,y,xunit=False):
         """
         Computes the log-likelihood of a dataset O.
         it uses the  current learned parameters of the model
 
         Parameters
         ----------
-        O : TYPE Numpy array of size T'xK
+        y : TYPE Numpy array of size T'xK
             DESCRIPTION. Observations to be tested
-        pena : TYPE, optional bool
-            DESCRIPTION. The default is False. it applies the BIC penalization
         xunit : TYPE, optional bool
             DESCRIPTION. The default is False. it applies the BIC per unit of data
-        ps : TYPE, optional  int
-            DESCRIPTION. The default is None. It changes the initial base distribution
-
         Returns
         -------
         TYPE float
@@ -868,6 +1009,24 @@ class KDE_AsHMM:
         
         
     def sample_state(self,n,i,root=None):
+        """
+        
+
+        Parameters
+        ----------
+        n : TYPE
+            DESCRIPTION.
+        i : TYPE
+            DESCRIPTION.
+        root : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        data : TYPE
+            DESCRIPTION.
+
+        """
         if root is None:
             root = self.O[:self.P]
         data = np.zeros([n,self.K])
@@ -909,6 +1068,23 @@ class KDE_AsHMM:
         
         
     def plot_densities_k(self,k,leng=500,nombre=""):
+        """
+        
+
+        Parameters
+        ----------
+        k : TYPE
+            DESCRIPTION.
+        leng : TYPE, optional
+            DESCRIPTION. The default is 500.
+        nombre : TYPE, optional
+            DESCRIPTION. The default is "".
+
+        Returns
+        -------
+        None.
+
+        """
         dat = self.O
         y = dat[:,k]
         y_min = np.min(y)
@@ -1061,6 +1237,21 @@ class KDE_AsHMM:
         plt.tight_layout()
 
     def plot_AR_k_scatter(self,k,samples=500):
+        """
+        
+
+        Parameters
+        ----------
+        k : TYPE
+            DESCRIPTION.
+        samples : TYPE, optional
+            DESCRIPTION. The default is 500.
+
+        Returns
+        -------
+        None.
+
+        """
         
         n_plots = 2*self.P
         if n_plots<6:
@@ -1107,18 +1298,14 @@ class KDE_AsHMM:
             os.mkdir(root)
         except:
             pass
-        itemlist = [self.N,self.K,self.P,self.A,self.pi,self.B,self.sigma,self.p
-                    ,self.G,self.L,self.mus,self.covs,self.dictionary,
-                    self.b,self.bic,self.LogLtrain]
-        if self.kappa is not None:
-            itemlist.append(self.nu)
-            itemlist.append(self.kappa)
+        itemlist = [self.N,self.K,self.P,self.length,self.O,self.A,self.pi,self.M,self.h,self.v,self.p
+                    ,self.G,self.L]
         with open(root+"\\"+name+".kdehmm", 'wb') as fp:
             pickle.dump(itemlist, fp)
     
     def load(self,rootr):
         """
-        Loads a model, must be an ashmm file 
+        Loads a model, must be an kdehmm file 
 
         Parameters
         ----------
@@ -1132,33 +1319,35 @@ class KDE_AsHMM:
 
         """
         if rootr[-7:] != ".kdehmm":
-            return "The file is not an ashmm file"
+            raise Exception("The file is not an ashmm file")
         with open(rootr, "rb") as  fp:
             loaded = pickle.load(fp)
         self.N          = loaded[0]
         self.K          = loaded[1]
         self.P          = loaded[2]
-        self.A          = loaded[3]
-        self.pi         = loaded[4]
-        self.B          = loaded[5]
-        self.sigma      = loaded[6]
-        self.p          = loaded[7]
-        self.G          = loaded[8]
-        self.L          = loaded[9]
-        self.mus        = loaded[10]
-        self.covs       = loaded[11]
-        self.dictionary = loaded[12]
-        self.b          = loaded[13]
-        self.bic        = loaded[14]
-        self.LogLtrain  = loaded[15]
-        if len(loaded)>16:
-            self.nu     = loaded[16]
-            self.kappa  = loaded[17]
-        
-    
+        self.length     = loaded[3]
+        self.O          = loaded[4]
+        self.A          = loaded[5]
+        self.pi         = loaded[6]
+        self.M          = loaded[7]
+        self.h          = loaded[8]
+        self.v          = loaded[9]
+        self.p          = loaded[10]
+        self.G          = loaded[11]
+        self.L          = loaded[12]
+
+            
 class forBack:
     
     def __init__(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
         self.alpha = None
         self.beta  = None
         self.gamma = None
@@ -1174,6 +1363,20 @@ class forBack:
         
         
     def gaussian_kernel(self,x):
+        """
+        
+
+        Parameters
+        ----------
+        x : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
         return  np.exp(-0.5*x**2)/(np.sqrt(2*np.pi)) 
    
   
@@ -1310,7 +1513,7 @@ class forBack:
         
                 
         
-    def forward_backward(self,A,pi,O,P,ps=None): 
+    def forward_backward(self,A,pi,O,P): 
         """
         Does the scaled forward-backward algorithm using logarithms
 
@@ -1320,10 +1523,7 @@ class forBack:
             DESCRIPTION. The default is None. index of the initial distibution
         """
         T = len(O)
-        if ps == None:
-            alfa = pi*self.probt[0]
-        else:
-            alfa = A[ps]*self.probt[0]
+        alfa = pi*self.probt[0]
         Cd = 1./np.sum(alfa)
         Clist = np.array([Cd])
         alfa = alfa*Cd
@@ -1364,54 +1564,49 @@ class forBack:
         y[inds] = np.exp(-740)
         return y
     
-    def forward_step(self,alfa,A,t,k_eval=False,prob=None):
+    def forward_step(self,alfa,A,t):
         """
-        Does an inductive step in the alfa variable
-        alfa_t(i) = P(O1,..., Ot, q_t=i|lambda)
+        
 
-        Parameters check AR_ASLG_HMM for more information 
+        Parameters
         ----------
-        alfa : TYPE numpy array of size N
-            DESCRIPTION. alfa_t(i)
-        t : TYPE int
-            DESCRIPTION. time isntance
-        k_eval : TYPE, optional bool
-            DESCRIPTION. The default is False. Use proposed or current probabilities
-        prob : TYPE, optional numpy array fo size N
-            DESCRIPTION. The default is None. proposed probabilities
+        alfa : TYPE
+            DESCRIPTION.
+        A : TYPE
+            DESCRIPTION.
+        t : TYPE
+            DESCRIPTION.
+        k_eval : TYPE, optional
+            DESCRIPTION. The default is False.
+        prob : TYPE, optional
+            DESCRIPTION. The default is None.
 
         Returns
         -------
-        TYPE numpy array  of size N
-            DESCRIPTION. [alfa_{t+1}(i)]_i
+        TYPE
+            DESCRIPTION.
 
         """
-        if k_eval == False:
-            arg = np.dot(alfa,A)
-            return self.probt[t]*arg
-        else:
-            logaa = np.dot(alfa,A)
-            return prob[t]*logaa
-        # return np.exp(np.log(np.dot(alfa,A))+self.prob_comp[t])
-        
-    
-    
+        arg = np.dot(alfa,A)
+        return self.probt[t]*arg
+
     def backward_step(self,beta,A,t): 
         """
-        Does an inductive step in the beta variable
-        beta_t(i) = P(Ot+1,..., OT| q_t=i,lambda)
+        
 
-        Parameters check AR_ASLG_HMM for more information 
+        Parameters
         ----------
-        beta : TYPE numpy array of size N
-            DESCRIPTION.  beta_t(i)
-        t : TYPE int
-            DESCRIPTION. time isntance
+        beta : TYPE
+            DESCRIPTION.
+        A : TYPE
+            DESCRIPTION.
+        t : TYPE
+            DESCRIPTION.
 
         Returns
         -------
-        TYPE numpy array  of size N
-            DESCRIPTION. [beta_{t+1}(i)]_i
+        arg : TYPE
+            DESCRIPTION.
 
         """
         arg = np.dot(A,self.probt[t]*beta)
@@ -1419,10 +1614,23 @@ class forBack:
     
     def act_aij(self,A,N,O,P): 
         """
-        Updates the parameter A
+        
 
-        Parameters check AR_ASLG_HMM for more information 
+        Parameters
         ----------
+        A : TYPE
+            DESCRIPTION.
+        N : TYPE
+            DESCRIPTION.
+        O : TYPE
+            DESCRIPTION.
+        P : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
         """
         T = len(O)-P
         bj = self.probt
@@ -1447,6 +1655,30 @@ class forBack:
     def update_params(self,x,curr_G,G,curr_p,p,P,M,h):
         """
         
+
+        Parameters
+        ----------
+        x : TYPE
+            DESCRIPTION.
+        curr_G : TYPE
+            DESCRIPTION.
+        G : TYPE
+            DESCRIPTION.
+        curr_p : TYPE
+            DESCRIPTION.
+        p : TYPE
+            DESCRIPTION.
+        P : TYPE
+            DESCRIPTION.
+        M : TYPE
+            DESCRIPTION.
+        h : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
         """
         # Constantes a usar
         T = len(x)
@@ -1709,7 +1941,7 @@ plt.grid("on")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
 plt.tight_layout()
-
+P=2
 k  = 0 
 ar = 1
 plt.figure("Data scatter AR")
@@ -1722,10 +1954,10 @@ plt.tight_layout()
 root = r"C:\Users\fox_e\Dropbox\Doctorado\Software\HMM_develop\C\C++"
 np.savetxt(root + r'\prueba.csv',data,delimiter = ",")
 
-model1 = KDE_AsHMM(data, lengths, 3,P=P)
+model1 = KDE_AsHMM(data, 3,P=P)
 model1.EM()
 
-model2 = KDE_AsHMM(data, lengths, 3,P=P)
+model2 = KDE_AsHMM(data, 3,P=P)
 model2.SEM()
 
 
