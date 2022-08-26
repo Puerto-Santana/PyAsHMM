@@ -10,35 +10,60 @@ import time
 import os
 import numpy as np
 import networkx as nx
-from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 from AR_ASLG_HMM  import AR_ASLG_HMM  as hmm
-from scipy.special import logsumexp
-from scipy.spatial import distance_matrix as distmat
-# import ctypes 
-# root = os.getcwd()
-# so_file = root+"/aux_k.so"
-# fun =  ctypes.CDLL(so_file)
-# print(type(fun))
-# print(fun)
-# return_val = fun.suma(16,14)
-# print(return_val)
-
-
 class KDE_AsHMM:    
-    def __init__(self,O,lengths,N, A=None, pi=None, h= None, M=None, v=None, 
+    def __init__(self,O,N,A=None, pi=None, h= None, M=None, v=None, 
                   p=None, P=None, G=None, sigma=None,p_cor=5,struc=True,lags=True):
+        """
+        Creates and object of type KDE-AsHMM
+        
+        This models assumes that for each hidden state 
+        Parameters
+        ----------
+        O : TYPE
+            DESCRIPTION.
+        lengths : TYPE
+            DESCRIPTION.
+        N : TYPE
+            DESCRIPTION.
+        A : TYPE, optional
+            DESCRIPTION. The default is None.
+        pi : TYPE, optional
+            DESCRIPTION. The default is None.
+        h : TYPE, optional
+            DESCRIPTION. The default is None.
+        M : TYPE, optional
+            DESCRIPTION. The default is None.
+        v : TYPE, optional
+            DESCRIPTION. The default is None.
+        p : TYPE, optional
+            DESCRIPTION. The default is None.
+        P : TYPE, optional
+            DESCRIPTION. The default is None.
+        G : TYPE, optional
+            DESCRIPTION. The default is None.
+        sigma : TYPE, optional
+            DESCRIPTION. The default is None.
+        p_cor : TYPE, optional
+            DESCRIPTION. The default is 5.
+        struc : TYPE, optional
+            DESCRIPTION. The default is True.
+        lags : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
         self.O = O
         self.N = N
-        self.lengths = lengths
         self.struc   = struc    
         self.lags    = lags    
         self.K       = len(O[0]) 
-        self.git     = 0
         self.min_h = np.zeros(self.K)
         
-        
-
         if P is None:
             self.P = self.det_lags(p_cor=p_cor)
         else:
@@ -433,26 +458,17 @@ class KDE_AsHMM:
         ts : TYPE boolean list
             DESCRIPTION. indices to be updated of the parameter sigma
         """
-        # tick = time.time()
-        # print("Performing AR optimization")
         for i in range(self.N):
             for k in range(self.K):
-                sm = 0
-                aux_len = np.concatenate([[0],self.lengths.cumsum()])
-                for j in range(len(self.forback)):
-                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.lengths[j])
-                    sm+= self.forback[j].score_i_k(self.O[aux_len[j]:aux_len[j+1]],self.O[aux_len[j]:aux_len[j+1]],self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
-                    # print(str(i)+":"+str(k)+", current score: " +str(sm))
+                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.length)
+                sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                 while self.p[i][k] +1 <= self.P :
                     p2 = np.copy(self.p)
                     p2[i][k] = p2[i][k] +1
                     [h2,v2,M2] = self.act_params(self.G,self.G,self.p,p2)
-                    s2 = 0
-                    aux_len = np.concatenate([[0],self.lengths.cumsum()])
                     for j in range(len(self.forback)):
-                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*(self.lengths[j])
-                        s2+= self.forback[j].score_i_k(self.O[aux_len[j]:aux_len[j+1]],self.O[aux_len[j]:aux_len[j+1]],M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
-                        # print(str(i)+":"+str(k)+", Score to compare: "+str(s2))
+                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*(self.length)
+                        s2 = self.forback[0].score_i_k(self.O,self.O,M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
                     if s2 > sm:
                         self.p = p2
                         self.M = M2
@@ -509,18 +525,13 @@ class KDE_AsHMM:
         ts : TYPE boolean list
             DESCRIPTION. indices to be updated of the parameter sigma
         """
-        # tick = time.time()
-        # print("Performing BN optimization")
         for i in range(self.N):
             for k in range(self.K):
                 possi = self.pos_ads(self.G[i])
                 son = possi[k][0]
                 if len(possi[k][1])!=0:
-                    sm = 0
-                    aux_len = np.concatenate([[0],self.lengths.cumsum()])
-                    for r in range(len(self.forback)):
-                        pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.lengths[r])
-                        sm+= self.forback[r].score_i_k(self.O[aux_len[r]:aux_len[r+1]],self.O[aux_len[r]:aux_len[r+1]],self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
+                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.length)
+                    sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                     for j in possi[k][1]:
                         G2 = np.copy(self.G)
                         G2[i][son][j] =1
@@ -528,11 +539,8 @@ class KDE_AsHMM:
                         for nn in range(self.N):
                             L2.append(self.dag_v(G2[nn])[1])
                         [h2,v2,M2] = self.act_params(self.G,G2,self.p,self.p)
-                        s2 = 0
-                        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-                        for l in range(len(self.forback)):
-                            pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*(self.lengths[l])
-                            s2 =+ self.forback[l].score_i_k(self.O[aux_len[l]:aux_len[l+1]],self.O[aux_len[l]:aux_len[l+1]],M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
+                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*(self.length)
+                        s2 = self.forback[0].score_i_k(self.O,self.O,M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
                         if s2>sm: 
                             sm= s2
                             self.M = M2
@@ -540,8 +548,7 @@ class KDE_AsHMM:
                             self.L = L2
                         else:
                             break
-        # tock = time.time()
-        # print("BN optimization ended, took: "+str(round(tock-tick,6))+"s")
+
 
                     
                
@@ -574,9 +581,7 @@ class KDE_AsHMM:
         p : TYPE numpy array of size NxK
             DESCRIPTION. matrix of number of AR values
         """  
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        for i in range(len(self.lengths)):
-            self.forback[i].prob_t(self.O[aux_len[i]:aux_len[i+1]],self.O[aux_len[i]:aux_len[i+1]],self.M,self.p,self.G,self.P,self.v,self.h)
+        self.forback[0].prob_t(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h)
 
 
 
@@ -589,27 +594,17 @@ class KDE_AsHMM:
         ps : TYPE, optional int
             DESCRIPTION. The default is None. index of the initial distibution
         """
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        for i in range(len(self.lengths)):
-            self.forback[i].forward_backward(self.A,self.pi,self.O[aux_len[i]:aux_len[i+1]],self.P)
+        self.forback[i].forward_backward(self.A,self.pi,self.O,self.P)
             
     def act_params(self,curr_G,G,curr_p,p,method=0):
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        self.forback[0].update_params(self.O[aux_len[0]:aux_len[1]],curr_G,G,curr_p,p,self.P,self.M,self.h)
+        self.forback[0].update_params(self.O,curr_G,G,curr_p,p,self.P,self.M,self.h)
         numh =self.forback[0].numh
         denh =self.forback[0].denh
         numw =self.forback[0].numw
         denw =self.forback[0].denw
         numm = self.forback[0].numm
         denm = self.forback[0].denm
-        for i in range(1,len(self.lengths)):
-            self.forback[i].updata_params(self.y,self.O[aux_len[i]:aux_len[i+1]],curr_G,G,curr_p,p,self.P,self.M,self.h)
-            numh += self.forback[i].numh
-            denh += self.forback[i].denh
-            numw += self.forback[i].numw
-            denw += self.forback[i].denw
-            numm += self.forback[i].numm
-            denm += self.forback[i].denm
+
             
         h = np.sqrt(numh/denh[np.newaxis].T)
         w = numw/denw
@@ -621,18 +616,11 @@ class KDE_AsHMM:
                 if np.sum(G[i][k]) != 0 or p[i][k]!=0:
                     Mik = np.linalg.solve(denm[i][k],numm[i][k].T).T
                     Mi.append(Mik.reshape([1,len(Mik)]))
-                    # Mi.append(Mik)
                 else:
                     Mik = self.M[i][k]
                     Mi.append(Mik)
             M.append(Mi)
-            
-        # for i in range(self.N):
-        #     for k in range(self.K):
-        #         if h[i][k] <self.min_h[k]:
-        #             h[i][k] = self.min_h[k]
-                    
-            
+        
         return [h,w,M]
     
     def act_A(self):
@@ -650,14 +638,9 @@ class KDE_AsHMM:
             DESCRIPTION. The updated transition matrix
 
         """
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        self.forback[0].act_aij(self.A,self.N,self.O[aux_len[0]:aux_len[1]],self.P)
+        self.forback[0].act_aij(self.A,self.N,self.O,self.P)
         numa = self.forback[0].numa
         dena = self.forback[0].dena
-        for i in range(1,len(self.lengths)):
-            self.forBack[i].act_aij(self.A,self.N,self.O[aux_len[i]:aux_len[i+1]],self.P)
-            numa = numa +self.forback[i].numa 
-            dena = dena +self.forback[i].dena 
             
         A = np.ones([self.N,self.N])
         for j in range(self.N):
@@ -679,12 +662,7 @@ class KDE_AsHMM:
 
         """
         api = self.forback[0].gamma[0]
-        for i in range(1,len(self.lengths)):
-            api = api+self.forback[i].gamma[0]
-        npi =  api/len(self.lengths)
-        # ind = np.argwhere(npi==0).T[0]
-        # npi[ind] = np.exp(-740)
-        return npi
+        return api
     
 
     
@@ -697,8 +675,7 @@ class KDE_AsHMM:
         tempv = self.v
         tempM = self.M
         self.forback = []
-        for l in range(len(self.lengths)):
-            self.forback.append(forBack())
+        self.forback.append(forBack())
         self.act_probt()      
         likeli = -1e10
         eps = 1
@@ -709,12 +686,9 @@ class KDE_AsHMM:
             self.pi = self.act_pi()
             h, v, M =  self.act_params(self.G,self.G,self.p,self.p)
             self.v = v
-            # if it == 0 and self.git==0:
             self.h = h
             self.M = M
-            likelinew = 0
-            for i in range(len(self.lengths)):
-                likelinew = likelinew + np.sum(-np.log(self.forback[i].ll))
+            likelinew = np.sum(-np.log(self.forback[0].ll))
             self.LogLtrain = likelinew
             self.act_probt()
             eps = likelinew-likeli
@@ -810,9 +784,8 @@ class KDE_AsHMM:
             DESCRIPTION. Most likely sequence of hidden states
         """
         T =len(x)
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
         fb = forBack()
-        fb.prob_t(x,self.O[aux_len[0]:aux_len[1]],self.M,self.p,self.G,self.P,self.v,self.h,train=False)
+        fb.prob_t(x,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
         delta = np.log(self.pi)+np.log(fb.probt[0])
         deltat = [delta]
         psi = [np.zeros(len(self.pi))]
@@ -883,8 +856,7 @@ class KDE_AsHMM:
 
         """ 
         fb = forBack()
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        fb.prob_t(y,self.O[aux_len[0]:aux_len[1]],self.M,self.p,self.G,self.P,self.v,self.h,train=False)
+        fb.prob_t(y,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
         fb.forward_backward(self.A,self.pi,y,self.P)
         Clist = fb.ll
         log = np.sum(-np.log(Clist))
@@ -937,8 +909,7 @@ class KDE_AsHMM:
         
         
     def plot_densities_k(self,k,leng=500,nombre=""):
-        aux_len = np.concatenate([[0],self.lengths.cumsum()])
-        dat = self.O[aux_len[0]:aux_len[1]]
+        dat = self.O
         y = dat[:,k]
         y_min = np.min(y)
         y_max = np.max(y)
@@ -956,7 +927,7 @@ class KDE_AsHMM:
                 rt = np.concatenate([rt, (np.roll(y[:,k],j)[self.P:])[np.newaxis].T],axis=1)
             uline  = np.zeros([leng-self.P,0])
             for k in pa_ik:
-                uk = self.O[aux_len[0]:aux_len[1]][:,k]
+                uk = self.O[:,k]
                 uk_min = np.min(uk)
                 uk_max = np.max(uk)
                 ukline = np.linspace(uk_min,uk_max,leng-self.P)
@@ -981,10 +952,6 @@ class KDE_AsHMM:
         plt.ylabel("$P$")
         plt.grid("on")
         plt.tight_layout()
-    
-    
-    def gaussian_kernel(self,x):
-        return  np.exp(-0.5*x**2)/(np.sqrt(2*np.pi)) 
     
     
     def scatter_BN_ik(self,i,k,samples=5000):

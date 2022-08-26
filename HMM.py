@@ -17,7 +17,7 @@ from FS_AsHMM import FS_AsHMM                 # Cite: C. Puerto-Santana, P. Larr
 from FS_HMM import FS_HMM                     # Cite: S. Adams, P. A. Beling and R. Cogill, "Feature Selection for Hidden Markov Models and Hidden Semi-Markov Models," in IEEE Access, vol. 4, pp. 1642-1657, 2016, doi: 10.1109/ACCESS.2016.2552478.
 from LMSAR import LMSAR                       # Cite: J. Hamilton, "A New Approach to the Economic Analysis of Nonstationary Time Series and the Business Cycle", Econometrica, 1989
 from VAR_MOG_HMM import VAR_MOG_HMM           # Cite: A. Poritz, "Linear predictive hidden markov models and the speech signal", in IEEE Xplore
-from CT_DHMM import CT_DHMM
+from CT_DHMM import CT_DHMM                   # Cite: ...
 from KDE_AsHMM import KDE_AsHMM               # Cite: ...
 #%% 
 class HMM:
