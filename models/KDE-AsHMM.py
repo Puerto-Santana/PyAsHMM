@@ -100,9 +100,9 @@ class KDE_AsHMM:
                 raise Exception("Maximum lag  P must be an integer")
                 
         # Auxiliary model for transition matrix
-        if v is None or A is None:
-            aux_model = hmm(O,np.array([self.length]),N,P=self.P)
-            aux_model.EM()
+        # if v is None or A is None:
+        #     aux_model = hmm(O,np.array([self.length]),N,P=self.P)
+        #     aux_model.EM()
             
         
         # Setting the bandwidths    
@@ -140,8 +140,11 @@ class KDE_AsHMM:
             
         # Setting the initial transition matrix
         if  A is None:
-            Ap = aux_model.A
-            self.A = Ap
+            
+            # Ap = aux_model.A
+            # self.A = Ap
+            A = np.random.uniform(0.01,0.99,[self.N,self.N])
+            self.A = A/np.sum(A,axis=1)
         else:
             if type(A) is np.ndarray:
                 if len(A.shape) == 2:
@@ -710,7 +713,7 @@ class KDE_AsHMM:
         None.
 
         """
-        self.forback[0].forward_backward(self.A,self.pi,self.O,self.P)
+        self.forback[0].forward_backward(self.A,self.pi)
             
     def act_params(self,curr_G,G,curr_p,p):
         """
@@ -769,7 +772,7 @@ class KDE_AsHMM:
             DESCRIPTION. Transition matrix
 
         """
-        self.forback[0].act_aij(self.A,self.N,self.O,self.P)
+        self.forback[0].act_aij(self.A,self.N)
         numa = self.forback[0].numa
         dena = self.forback[0].dena
             
@@ -1016,7 +1019,7 @@ class KDE_AsHMM:
             raise Exception("Input number of columns does not match models dimensionality")
         fb = forBack()
         fb.prob_t(y,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
-        fb.forward_backward(self.A,self.pi,y,self.P)
+        fb.forward_backward(self.A,self.pi)
         Clist = fb.ll
         log = np.sum(-np.log(Clist))
         del fb
@@ -1419,6 +1422,8 @@ class KDE_AsHMM:
         None.
 
         """
+        if type(model) is not KDE_AsHMM:
+            raise Exception("Model is not a KDE_AsHMM object")
         self.N          = model.N
         self.K          = model.K
         self.P          = model.P
@@ -1438,8 +1443,8 @@ class forBack:
     
     def __init__(self):
         """
+        Creates a forBack object, useful to deal with probabilities and latent probabilities 
         
-
         Returns
         -------
         None.
@@ -1611,41 +1616,30 @@ class forBack:
         
                 
         
-    def forward_backward(self,A,pi,O,P):    
+    def forward_backward(self,A,pi):    
         """
         Performs the forward-backward algorithm 
 
         Parameters
         ----------
-        A : TYPE
-            DESCRIPTION.
-        pi : TYPE
-            DESCRIPTION.
-        O : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
-
+        A : TYPE numpy ndarray
+            DESCRIPTION. Transition matrix
+        pi : TYPE numpy ndarray
+            DESCRIPTION. initial distribution
         Returns
         -------
         None.
 
         """
-        T = len(O)
+        T = len(self.probt)
         alfa = pi*self.probt[0]
         Cd = 1./np.sum(alfa)
         Clist = np.array([Cd])
         alfa = alfa*Cd
         ALFA = [alfa]
-        for t in range(1,T-P):
+        for t in range(1,T):
             alfa = self.forward_step(alfa,A,t)
-            Cd = 1./np.sum(alfa)
-
-            # alfa = self.checkzero(alfa)
-            # maxt = np.log(np.max(alfa))
-            # Cd =  -(maxt + np.log(np.sum(np.exp(np.log(alfa)-maxt))))
-            # Cd = np.exp(Cd)
-            
+            Cd = 1./np.sum(alfa)            
             Clist = np.concatenate([Clist,[Cd]])
             alfa = Cd*alfa
             ALFA.append(alfa)
@@ -1656,8 +1650,8 @@ class forBack:
         Clist =Clist[::-1]
         beta = beta*Clist[0]
         BETA = [beta]
-        for t in range(1,T-P):
-            beta = self.backward_step(beta,A,T-t-P)
+        for t in range(1,T):
+            beta = self.backward_step(beta,A,T-t)
             beta = beta*Clist[t]
             BETA.append(beta)
         BETA= np.flipud(np.array(BETA))
@@ -1677,25 +1671,21 @@ class forBack:
     
     def forward_step(self,alfa,A,t):
         """
-        
+        Does a forward step
 
         Parameters
         ----------
-        alfa : TYPE
-            DESCRIPTION.
-        A : TYPE
-            DESCRIPTION.
-        t : TYPE
-            DESCRIPTION.
-        k_eval : TYPE, optional
-            DESCRIPTION. The default is False.
-        prob : TYPE, optional
-            DESCRIPTION. The default is None.
+        alfa : TYPE numpy ndarray
+            DESCRIPTION. current alfa values
+        A : TYPE numpy ndarray
+            DESCRIPTION. transition matrix
+        t : TYPE int
+            DESCRIPTION. time instance
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
+        TYPE numpy ndarray
+            DESCRIPTION. alfa at time step t
 
         """
         arg = np.dot(alfa,A)
@@ -1703,16 +1693,16 @@ class forBack:
 
     def backward_step(self,beta,A,t): 
         """
-        
+        Does a backward step
 
         Parameters
         ----------
-        beta : TYPE
-            DESCRIPTION.
-        A : TYPE
-            DESCRIPTION.
-        t : TYPE
-            DESCRIPTION.
+        beta : TYPE numpy ndarray
+            DESCRIPTION. Current beta values
+        A : TYPE numpy ndarray
+            DESCRIPTION. transition matrix
+        t : TYPE int
+            DESCRIPTION. time instance
 
         Returns
         -------
@@ -1723,16 +1713,16 @@ class forBack:
         arg = np.dot(A,self.probt[t]*beta)
         return arg
     
-    def act_aij(self,A,N,O,P): 
+    def act_aij(self,A,N,): 
         """
-        
+        Updates the transition matrix A
 
         Parameters
         ----------
-        A : TYPE
-            DESCRIPTION.
-        N : TYPE
-            DESCRIPTION.
+        A : TYPE numpy ndarray
+            DESCRIPTION. Transition matrix
+        N : TYPE int
+            DESCRIPTION. number of hidden states
         O : TYPE
             DESCRIPTION.
         P : TYPE
@@ -1743,7 +1733,7 @@ class forBack:
         None.
 
         """
-        T = len(O)-P
+        T = len(self.probt)
         bj = self.probt
         nume = []
         deno = []
@@ -1765,26 +1755,26 @@ class forBack:
                 
     def update_params(self,x,curr_G,G,curr_p,p,P,M,h):
         """
-        Perform the M stepto update the v, h and M parameters
+        Perform the M step to update the v, h and M parameters
 
         Parameters
         ----------
         x : TYPE numpy ndarray
             DESCRIPTION. training data
         curr_G : TYPE list of matrices
-            DESCRIPTION. current G matrices
+            DESCRIPTION. Current G matrices
         G : TYPE list of matrices
-            DESCRIPTION. tested G matrices, equal to curr_G in EM
+            DESCRIPTION. Tested G matrices, equal to curr_G in EM
         curr_p : TYPE numpy ndarray
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
-        M : TYPE
-            DESCRIPTION.
-        h : TYPE
-            DESCRIPTION.
+            DESCRIPTION. Current AR orders
+        p : TYPE numpy ndarray
+            DESCRIPTION. Tested AR orders, equal to curr:p in EM
+        P : TYPE int
+            DESCRIPTION. Maximum lag
+        M : TYPE list
+            DESCRIPTION. List of the list of the parameters
+        h : TYPE numpy ndarray
+            DESCRIPTION. Bandwidths
 
         Returns
         -------
