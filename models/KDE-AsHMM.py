@@ -101,13 +101,13 @@ class KDE_AsHMM:
                 
         # Auxiliary model for transition matrix
         if v is None or A is None:
-            aux_model = hmm(O,lengths,N,P=self.P)
+            aux_model = hmm(O,np.array([self.length]),N,P=self.P)
             aux_model.EM()
             
         
         # Setting the bandwidths    
         if h is None:
-            self.h = np.ones([self.N,self.K])*(4*np.std(O,axis=0)**5/(3*np.sum(lengths)))**(1./5.)
+            self.h = np.ones([self.N,self.K])*(4*np.std(O,axis=0)**5/(3*self.length))**(1./5.)
         else:
             if type(h) is np.ndarray:
                 if len(h.shape) ==2:
@@ -580,7 +580,7 @@ class KDE_AsHMM:
     
     def climb_ar(self):
         """
-        
+        Performs the AR optimization 
 
         Returns
         -------
@@ -639,14 +639,12 @@ class KDE_AsHMM:
     
     def climb_struc(self): 
         """
-        Looks for the best graphical structure, uses an upward greedy algorithm
+        Performs the structural non AR optimization 
 
-        Parameters
-        ----------
-        tb : TYPE boolean list 
-            DESCRIPTION. indices to be updated of the parameter B
-        ts : TYPE boolean list
-            DESCRIPTION. indices to be updated of the parameter sigma
+        Returns
+        -------
+        None.
+
         """
         for i in range(self.N):
             for k in range(self.K):
@@ -677,7 +675,7 @@ class KDE_AsHMM:
                
     def hill_climb(self):
         """
-        
+        Perform the M structural optimization step during the SEM algorithm
 
         Returns
         -------
@@ -692,7 +690,7 @@ class KDE_AsHMM:
 
     def act_probt(self):
         """
-        
+        Updates the forbck list with all the temporal probabilities
 
         Returns
         -------
@@ -705,7 +703,7 @@ class KDE_AsHMM:
 
     def act_gamma(self):
         """
-        
+        Does the forward-backward algorithm for the current forBack object
 
         Returns
         -------
@@ -714,27 +712,25 @@ class KDE_AsHMM:
         """
         self.forback[0].forward_backward(self.A,self.pi,self.O,self.P)
             
-    def act_params(self,curr_G,G,curr_p,p,method=0):
+    def act_params(self,curr_G,G,curr_p,p):
         """
-        
+        Updates the parameters v, h and M
 
         Parameters
         ----------
-        curr_G : TYPE
-            DESCRIPTION.
-        G : TYPE
-            DESCRIPTION.
-        curr_p : TYPE
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        method : TYPE, optional
-            DESCRIPTION. The default is 0.
-
+        curr_G : TYPE list of matrices
+            DESCRIPTION. Current G model
+        G : TYPE list of matrices
+            DESCRIPTION. Proposed G model, same as curr_G in EM
+        curr_p : TYPE numpy ndarray
+            DESCRIPTION. Current AR orders
+        p : TYPE numpy ndarray
+            DESCRIPTION. Poposed AR orders, same as curr_p in EM
+  
         Returns
         -------
-        list
-            DESCRIPTION.
+        list with parameters h,w,M
+            DESCRIPTION. h bandwidths, w new instance relevancies, M weights
 
         """
         self.forback[0].update_params(self.O,curr_G,G,curr_p,p,self.P,self.M,self.h)
@@ -765,12 +761,12 @@ class KDE_AsHMM:
     
     def act_A(self):
         """
-        
+        Updates the transition matrix parameter
 
-        Returns
+        Returns 
         -------
-        A : TYPE
-            DESCRIPTION.
+        A : TYPE numpy ndarray
+            DESCRIPTION. Transition matrix
 
         """
         self.forback[0].act_aij(self.A,self.N,self.O,self.P)
@@ -788,12 +784,11 @@ class KDE_AsHMM:
     
     def act_pi(self):
         """
-        
+        Updated the pi parameter
 
         Returns
         -------
-        api : TYPE
-            DESCRIPTION.
+        None.
 
         """
         api = self.forback[0].gamma[0]
@@ -803,22 +798,26 @@ class KDE_AsHMM:
     
     def EM(self,its=50,err=9e-1,plot=False):
         """
-        
+        Performs the EM algorithm
 
         Parameters
         ----------
-        its : TYPE, optional
-            DESCRIPTION. The default is 50.
-        err : TYPE, optional
-            DESCRIPTION. The default is 9e-1.
-        plot : TYPE, optional
-            DESCRIPTION. The default is False.
+        its : TYPE, optional int
+            DESCRIPTION. The default is 50. number of iterations of the EM algorithm
+        err : TYPE, optional float
+            DESCRIPTION. The default is 9e-1. error bound to end the algorithm
+        plot : TYPE, optional bool
+            DESCRIPTION. The default is False. plot samples from the learned model for each EM ireration (suitable for dimensions <4)
 
         Returns
         -------
         None.
 
         """
+        if type(its) is not int:
+            raise Exception("The parameter its  must be an integer")
+        if type(err) is not float:
+            raise Exception("The parameter err must be a float")
         print("EM optimization...")
         tick = time.time()
         tempa =self.A
@@ -870,26 +869,34 @@ class KDE_AsHMM:
         
     def SEM(self,err1=9e-1,err2=9e-1,its1=1,its2=50,plot=False): 
         """
+        Computes the SEM algorithm
         
-
         Parameters
         ----------
-        err1 : TYPE, optional
-            DESCRIPTION. The default is 9e-1.
-        err2 : TYPE, optional
-            DESCRIPTION. The default is 9e-1.
-        its1 : TYPE, optional
-            DESCRIPTION. The default is 1.
-        its2 : TYPE, optional
-            DESCRIPTION. The default is 50.
-        plot : TYPE, optional
-            DESCRIPTION. The default is False.
+        err1 : TYPE, optional float
+            DESCRIPTION. The default is 9e-1. error bound to end SEM algorithm
+        err2 : TYPE, optional float
+            DESCRIPTION. The default is 9e-1. error bound to end EM algorithm
+        its1 : TYPE, optional int
+            DESCRIPTION. The default is 1. Number of iterations of the SEM algorithm
+        its2 : TYPE, optional int
+            DESCRIPTION. The default is 50. Number of iterations of the EM algorithm
+        plot : TYPE, optional bool
+            DESCRIPTION. The default is False. plot samples from the learned model for each EM ireration (suitable for dimensions <4)
 
         Returns
         -------
         None.
 
         """
+        if type(its1) is not int:
+            raise Exception("The parameter its  must be an integer")
+        if type(err1) is not float:
+            raise Exception("The parameter err must be a float")
+        if type(its2) is not int:
+            raise Exception("The parameter its  must be an integer")
+        if type(err2) is not float:
+            raise Exception("The parameter err must be a float")
         eps = 1e100
         self.git = 0
         likelihood  = []
@@ -909,25 +916,31 @@ class KDE_AsHMM:
     
     def viterbi(self,x,plot=True,xlabel="Time units",ylabel="index"): 
         """
-        
+        Performs the viterbi algorithm or hard segmentation.
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        plot : TYPE, optional
-            DESCRIPTION. The default is True.
-        xlabel : TYPE, optional
-            DESCRIPTION. The default is "Time units".
-        ylabel : TYPE, optional
-            DESCRIPTION. The default is "index".
+        x : TYPE numpy ndarray
+            DESCRIPTION. input data to be segmentated
+        plot : TYPE, optional bool
+            DESCRIPTION. The default is True. Plots the segmentation
+        xlabel : TYPE, optional str
+            DESCRIPTION. The default is "Time units". x axis plot label
+        ylabel : TYPE, optional str
+            DESCRIPTION. The default is "index". y axis plot label
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
+        TYPE numpy array
+            DESCRIPTION. The Viterbi path of the data
 
         """
+        if type(x) is not np.ndarray:
+            raise Exception("Input must be a numpy ndarray")
+        if len(x.shape) !=2:
+            raise Exception("Input numpy ndarray must be 2 dimensional")
+        if len(x[0]) != self.K:
+            raise Exception("Input number of columns does not match models dimensionality")
         T =len(x)
         fb = forBack()
         fb.prob_t(x,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
@@ -995,6 +1008,12 @@ class KDE_AsHMM:
             DESCRIPTION. The score of the observations O
 
         """ 
+        if type(y) is not np.ndarray:
+            raise Exception("Input must be a numpy ndarray")
+        if len(y.shape) !=2:
+            raise Exception("Input numpy ndarray must be 2 dimensional")
+        if len(y[0]) != self.K:
+            raise Exception("Input number of columns does not match models dimensionality")
         fb = forBack()
         fb.prob_t(y,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
         fb.forward_backward(self.A,self.pi,y,self.P)
@@ -1007,29 +1026,32 @@ class KDE_AsHMM:
             return log/float(len(y))
         
         
-    def sample_state(self,n,i,root=None):
+    def sample_state(self,n,i):
         """
-        
+        Sample n instances from hidden state i
 
         Parameters
         ----------
-        n : TYPE
-            DESCRIPTION.
-        i : TYPE
-            DESCRIPTION.
-        root : TYPE, optional
-            DESCRIPTION. The default is None.
+        n : TYPE int
+            DESCRIPTION. number of samples
+        i : TYPE int
+            DESCRIPTION. hidden state index
 
         Returns
         -------
-        data : TYPE
-            DESCRIPTION.
+        data : TYPE numpy ndarray
+            DESCRIPTION. n samples from the distribution from hidden state i
 
         """
-        if root is None:
-            root = self.O[:self.P]
+        if type(n) is not int:
+            raise Exception("Number of samples n must be an integer")
+        if type(i) is not int:
+            raise Exception("Hidden state index i must be an integer")
+        if  i<0 or i>=self.N:
+            raise Exception("Hidden state index i does not exist")
+        semi = self.O[:self.P]
         data = np.zeros([n,self.K])
-        data = np.concatenate([root,data],axis=0)
+        data = np.concatenate([semi,data],axis=0)
         vi = self.v[:,i]
         Gi = self.G[i]
         Li = self.L[i]
@@ -1066,24 +1088,30 @@ class KDE_AsHMM:
         return data
         
         
-    def plot_densities_k(self,k,leng=500,nombre=""):
+    def plot_densities_k(self,k,leng=500,nombre="",root = None):
         """
+        Plots the densities of k for all the hidden states 
         
-
         Parameters
         ----------
-        k : TYPE
-            DESCRIPTION.
-        leng : TYPE, optional
-            DESCRIPTION. The default is 500.
-        nombre : TYPE, optional
-            DESCRIPTION. The default is "".
+        k : TYPE int
+            DESCRIPTION. variable index 
+        leng : TYPE, optional int
+            DESCRIPTION. The default is 500. Number of smaples per scatter plot
+        nombre : TYPE, optional str
+            DESCRIPTION. The default is "". Name for the plot
+        root : TYPE, optional str
+            DESCRIPTION. The default is None. route to save plot
 
         Returns
         -------
         None.
 
         """
+        if k<0 or k>= self.K:
+            raise Exception("Variable index k not found")
+        if type(leng) is not int:
+            raise Exception("Leng must be a positive integer")
         dat = self.O
         y = dat[:,k]
         y_min = np.min(y)
@@ -1127,9 +1155,11 @@ class KDE_AsHMM:
         plt.ylabel("$P$")
         plt.grid("on")
         plt.tight_layout()
+        if root is not None:
+            plt.savefig(root, dpi=600)
     
     
-    def scatter_BN_ik(self,i,k,samples=5000):
+    def scatter_BN_ik(self,i,k,samples=5000,root=None):
         """
         
 
@@ -1141,6 +1171,8 @@ class KDE_AsHMM:
             DESCRIPTION.
         samples : TYPE
             DESCRIPTION.
+        root : TYPE, optional str
+            DESCRIPTION. The default is None. route to save plot
 
         Returns
         -------
@@ -1167,26 +1199,38 @@ class KDE_AsHMM:
             plt.ylabel("$X^t_"+str(k)+"$")
             plt.grid("on")
         plt.tight_layout()
+        if root is not None:
+            plt.savefig(root, dpi=600)
             
 
-    def scatter_pair_kl(self,k,l,samples=5000,name=""):
+    def scatter_pair_kl(self,k,l,samples=5000,name="",root =""):
         """
-        
+        Plot the scatter plot of the distribution from a pair of variables k,l 
 
         Parameters
         ----------
-        i : TYPE
-            DESCRIPTION.
-        k : TYPE
-            DESCRIPTION.
-        samples : TYPE
-            DESCRIPTION.
+        k : TYPE int
+            DESCRIPTION. Index of a variable
+        l : TYPE int
+            DESCRIPTION. Index of a variable
+        samples : TYPE, optional int
+            DESCRIPTION. The default is 5000. Number of samples
+        name : TYPE, optional str
+            DESCRIPTION. The default is "". Name of the plot
+        root : TYPE, optional str 
+            DESCRIPTION. The default is None. route to save plot
 
         Returns
         -------
         None.
 
         """
+        if l<0 or l>= self.K:
+            raise Exception("Variable index l not found")
+        if k<0 or k>= self.K:
+            raise Exception("Variable index k not found")
+        if type(samples) is not int:
+            raise Exception("Leng must be a positive integer")
         plt.figure("Scatter variable "+ "$X_"+str(k)+"$ and  variable "+ "$X_"+str(l)+name)
         plt.clf()
         plt.subplot(1,2,1)
@@ -1204,9 +1248,28 @@ class KDE_AsHMM:
         plt.grid("on")
         plt.tight_layout()
         plt.pause(0.1)
+        if root is not None:
+            plt.savefig(root, dpi=600)
         
-    def plot_all_pairs_scatter(self,samples=500):
+    def plot_all_pairs_scatter(self,samples=500,root =None):
+        """
+        Plot scatter plots from the learned parameters for all pairs of variables
+
+        Parameters
         
+        ----------
+        samples : TYPE, optional int
+            DESCRIPTION. The default is 500. Number of instances for each sample for each hidden state
+        root : TYPE, optional str
+            DESCRIPTION. The default is None. route to save plot
+
+        Returns
+        -------
+        None.
+
+        """
+        if type(samples) is not int:
+            raise Exception("Leng must be a positive integer")
         n_plots = self.K*(self.K-1)
         if n_plots<6:
             n_cols = n_plots
@@ -1234,24 +1297,29 @@ class KDE_AsHMM:
                     plt.grid("on")
                     count +=2
         plt.tight_layout()
+        if root is not None:
+            plt.savefig(root, dpi=600)
 
-    def plot_AR_k_scatter(self,k,samples=500):
+    def plot_AR_k_scatter(self,k,samples=500,root=None):
         """
-        
+        Plot scatter plots from the learned parameters for all AR self.P values fro variable k
 
         Parameters
         ----------
-        k : TYPE
-            DESCRIPTION.
-        samples : TYPE, optional
-            DESCRIPTION. The default is 500.
+        k : TYPE int
+            DESCRIPTION. index of variable
+        samples : TYPE, optional int
+            DESCRIPTION. The default is 500. Number of instances per sample
 
         Returns
         -------
         None.
 
         """
-        
+        if k<0 or k>= self.K:
+            raise Exception("Variable index k not found")
+        if type(samples) is not int:
+            raise Exception("Leng must be a positive integer")
         n_plots = 2*self.P
         if n_plots<6:
             n_cols = n_plots
@@ -1278,6 +1346,8 @@ class KDE_AsHMM:
                 plt.grid("on")
                 count +=2
         plt.tight_layout()
+        if root is not None:
+            plt.savefig(root, dpi=600)
 
 
     def save(self,root=None, name = "kde-ashmm_"+str(datetime.datetime.now())[:10]):
@@ -1334,6 +1404,34 @@ class KDE_AsHMM:
         self.p          = loaded[10]
         self.G          = loaded[11]
         self.L          = loaded[12]
+        
+    def copy(self,model):
+        """
+        Copy the parameters of another KDE-AsHMM model
+
+        Parameters
+        ----------
+        model : TYPE KDE-AsHMM
+            DESCRIPTION. a KDE-AsHMM object
+
+        Returns
+        -------
+        None.
+
+        """
+        self.N          = model.N
+        self.K          = model.K
+        self.P          = model.P
+        self.length     = model.length
+        self.O          = model.O
+        self.A          = model.A
+        self.pi         = model.pi
+        self.M          = model.M
+        self.h          = model.h
+        self.v          = model.v
+        self.p          = model.p
+        self.G          = model.G
+        self.L          = model.L
 
             
 class forBack:
@@ -1542,6 +1640,12 @@ class forBack:
         for t in range(1,T-P):
             alfa = self.forward_step(alfa,A,t)
             Cd = 1./np.sum(alfa)
+
+            # alfa = self.checkzero(alfa)
+            # maxt = np.log(np.max(alfa))
+            # Cd =  -(maxt + np.log(np.sum(np.exp(np.log(alfa)-maxt))))
+            # Cd = np.exp(Cd)
+            
             Clist = np.concatenate([Clist,[Cd]])
             alfa = Cd*alfa
             ALFA.append(alfa)
@@ -1661,17 +1765,17 @@ class forBack:
                 
     def update_params(self,x,curr_G,G,curr_p,p,P,M,h):
         """
-        
+        Perform the M stepto update the v, h and M parameters
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        curr_G : TYPE
-            DESCRIPTION.
-        G : TYPE
-            DESCRIPTION.
-        curr_p : TYPE
+        x : TYPE numpy ndarray
+            DESCRIPTION. training data
+        curr_G : TYPE list of matrices
+            DESCRIPTION. current G matrices
+        G : TYPE list of matrices
+            DESCRIPTION. tested G matrices, equal to curr_G in EM
+        curr_p : TYPE numpy ndarray
             DESCRIPTION.
         p : TYPE
             DESCRIPTION.
@@ -1754,180 +1858,195 @@ class forBack:
         
 #%%Functions to generate data
 
-# def dag_v(G):
-#     """
-#     Executes the Kahn topological sorting  algorithm. 
+def dag_v(G):
+    """
+    Executes the Kahn topological sorting  algorithm. 
 
-#     Parameters
-#     ----------
-#     G : TYPE numpy array size KxK
-#         DESCRIPTION. a graph with K variables
+    Parameters
+    ----------
+    G : TYPE numpy array size KxK
+        DESCRIPTION. a graph with K variables
 
-#     Returns
-#     -------
-#     list
-#         DESCRIPTION. A bool indicating if it is a acyclic graph and a topological sort in L. 
+    Returns
+    -------
+    list
+        DESCRIPTION. A bool indicating if it is a acyclic graph and a topological sort in L. 
 
-#     """
-#     G2 = np.copy(G)
-#     L = []
-#     booli = False
-#     ss = np.sum(G2,axis=1)
-#     s = np.where(ss==0)[0]
-#     while len(s)>0:
-#         si = s[0]
-#         s = s[1:]
-#         L.append(si)
-#         indexi = np.where(G2.T[si]==1)[0]
-#         for x in indexi:
-#             G2[x][si] = 0
-#             if np.sum(G2[x])==0:
-#                 s =np.concatenate([s,[x]])
-#     if np.sum(G2)==0:
-#         booli = True
-#     return [booli,np.array(L)]
+    """
+    G2 = np.copy(G)
+    L = []
+    booli = False
+    ss = np.sum(G2,axis=1)
+    s = np.where(ss==0)[0]
+    while len(s)>0:
+        si = s[0]
+        s = s[1:]
+        L.append(si)
+        indexi = np.where(G2.T[si]==1)[0]
+        for x in indexi:
+            G2[x][si] = 0
+            if np.sum(G2[x])==0:
+                s =np.concatenate([s,[x]])
+    if np.sum(G2)==0:
+        booli = True
+    return [booli,np.array(L)]
 
-# def generate_2D(mean,sigma,k,roots,n,ar_coef):
-#     x1 = []
-#     lar = len(ar_coef)
-#     for t in range(n):
-#         if t <lar:
-#             x1t = np.random.normal(mean,sigma,1)
-#         else:
-#             x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.5*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
-#             # x1t = np.random.normal(mean+np.dot(ar_coef[::-1],x1[-lar:]),sigma,1)
-#             # x1t = np.random.normal(mean,sigma,1)
-#         x1.append(x1t)
-#     x1 = np.array(x1)
-#     x= []
-#     for i in range(len(x1)):
-#         mean = k
-#         for l in roots:
-#             mean *= (x1[i]-l)
-#         x.append(np.random.normal(mean,1,1))
-#     x = np.array(x)
-#     data = np.concatenate([x,x1],axis=1)
-#     return data
+def generate_2D(mean,sigma,k,roots,n,ar_coef):
+    x1 = []
+    lar = len(ar_coef)
+    for t in range(n):
+        if t <lar:
+            x1t = np.random.normal(mean,sigma,1)
+        else:
+            x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.5*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
+            # x1t = np.random.normal(mean+np.dot(ar_coef[::-1],x1[-lar:]),sigma,1)
+            # x1t = np.random.normal(mean,sigma,1)
+        x1.append(x1t)
+    x1 = np.array(x1)
+    x= []
+    for i in range(len(x1)):
+        mean = k
+        for l in roots:
+            mean *= (x1[i]-l)
+        x.append(np.random.normal(mean,1,1))
+    x = np.array(x)
+    data = np.concatenate([x,x1],axis=1)
+    return data
 
-# def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
-#     data = np.zeros([0,2])
-#     for i in seq:
-#         di = generate_2D(means[i],sigmas[i],ks[i],rootss[i],ns[i],ar_coef[i])
-#         data = np.concatenate([data,di],axis=0)
-#     return data
+def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
+    data = np.zeros([0,2])
+    for i in seq:
+        di = generate_2D(means[i],sigmas[i],ks[i],rootss[i],ns[i],ar_coef[i])
+        data = np.concatenate([data,di],axis=0)
+    return data
 
-# def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
-#     K = len(G)
-#     xt = np.ones([1,K])
-#     for i in L:
-#         if np.sum(M[i]) ==0 :
-#             xt[0][i] = np.random.normal(means[i],sigma[i],1)
-#         else:
-#             mean  = means[i]
-#             for w in range(K):
-#                 mean += f1(M[i][w]*xt[0][w])
-#             for l in range(P):
-#                 ki = k[i]
-#                 f2m = M[i][K+l]*f2(seed[-l-1][i])
-#                 mean += ki*f2m
-#             xt[0][i] = np.random.normal(mean,sigma[i],1)
-#     return xt
+def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
+    K = len(G)
+    xt = np.ones([1,K])
+    for i in L:
+        if np.sum(M[i]) ==0 :
+            xt[0][i] = np.random.normal(means[i],sigma[i],1)
+        else:
+            mean  = means[i]
+            for w in range(K):
+                mean += f1(M[i][w]*xt[0][w])
+            for l in range(P):
+                ki = k[i]
+                f2m = M[i][K+l]*f2(seed[-l-1][i])
+                mean += ki*f2m
+            xt[0][i] = np.random.normal(mean,sigma[i],1)
+    return xt
             
-# def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
-#     K = ncols 
-#     x = np.ones([P,K])*means[np.newaxis]
-#     for t in range(nrows):
-#         xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
-#         x = np.concatenate([x,xt],axis=0)
-#     return x
+def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
+    K = ncols 
+    x = np.ones([P,K])*means[np.newaxis]
+    for t in range(nrows):
+        xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
+        x = np.concatenate([x,xt],axis=0)
+    return x
 
-# def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
-#     ncols = len(means[0])
-#     x = np.zeros([0,ncols])
-#     for l in seq:
-#         xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
-#         x = np.concatenate([x,xl],axis=0)
-#     return x
-
-
-# def square(x):
-#     return np.sign(x)*np.abs(x)**2
-
-# def sin(x):
-#     return np.sin(2*np.pi*0.5*x)
-
-# def ide(x):
-#     return x
+def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
+    ncols = len(means[0])
+    x = np.zeros([0,ncols])
+    for l in seq:
+        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
+        x = np.concatenate([x,xl],axis=0)
+    return x
 
 
-# def log_gaussian_kernel(x):
-#     return -0.5*(x**2+np.log(2*np.pi))
+def square(x):
+    return np.sign(x)*np.abs(x)**2
 
-# def gaussian_kernel(x):
-#     return np.exp(-0.5*x**2)/np.sqrt(2*np.pi)
+def sin(x):
+    return np.sin(2*np.pi*0.5*x)
+
+def ide(x):
+    return x
+
+
+def log_gaussian_kernel(x):
+    return -0.5*(x**2+np.log(2*np.pi))
+
+def gaussian_kernel(x):
+    return np.exp(-0.5*x**2)/np.sqrt(2*np.pi)
      
 
 #%% con más variables
-# K = 7
-# N=3
-# means_g = np.array([ [2.3, 4.2, 3.5, 2.5, 1.2, 1, 2],[-2.1, 3.4, -2.4, 3.2, -4.1, 1 , 2], [-3.5 , -1.3, -4.4 , -0.5, -2.2, 1 , 2] ])
-# sigmas_g = np.array( [[0.7, 0.7, 0.8, 0.6, 1,0.5,0.6],[ 1, 0.8, 1.0 ,0.9 ,0.8,0.5,0.6], [0.8, 0.5, 1.0, 1.0, 0.8,0.5,0.6]])
-# k = np.array([ 3, 2, 1, 3, 2, 1 ,1])
-# G          = np.zeros([3,7,7])
-# G[1][1][0] = 1; G[1][3][2]=1; G[1][4][0]=1 
-# G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
-# L          = []
-# for i in range(3):
-#     lel = dag_v(G[i])
-#     print(lel[0])
-#     L.append(lel[1])
-# L            = np.array(L)
-# P            = 2
-# p            = [[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]]
-# MT            = np.zeros([N,K,K+P])
-# MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
-# MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
-# MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.89; MT[2][4][5] = 0.5
-# nses         = [100,200,300]
-# seqss        = [0,1,2,1,0,2,0]
-# data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
-# lengths_gen  = np.array([len(data_gen)])
+K = 7
+N=3
+means_g = np.array([ [2.3, 4.2, 3.5, 2.5, 1.2, 1, 2],[-2.1, 3.4, -2.4, 3.2, -4.1, 1 , 2], [-3.5 , -1.3, -4.4 , -0.5, -2.2, 1 , 2] ])
+sigmas_g = np.array( [[0.7, 0.7, 0.8, 0.6,0.21,0.5,0.6],[ 1, 0.8, 0.5 ,0.9 ,0.8,0.5,0.6], [0.8, 0.5, 0.7, 0.4, 0.8,0.5,0.6]])
+k = np.array([ 3, 2, 1, 3, 2, 1 ,1])
+G          = np.zeros([3,7,7])
+G[1][1][0] = 1; G[1][3][2]=1; G[1][4][0]=1 
+G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
+L          = []
+for i in range(3):
+    lel = dag_v(G[i])
+    print(lel[0])
+    L.append(lel[1])
+L            = np.array(L)
+P            = 2
+p            = np.array([[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]])
+MT            = np.zeros([N,K,K+P])
+MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
+MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
+MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.89; MT[2][4][5] = 0.5
+nses         = [100,200,300]
+seqss        = [0,1,2,1,0,2,0]
+data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+lengths_gen  = np.array([len(data_gen)])
 
 
-# model1 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
-# model1.EM()
+model1 = KDE_AsHMM(data_gen, 3,P=P)
+model1.EM()
 
-# model2 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
-# model2.SEM()
-
-# model3 = hmm(data_gen, lengths_gen, 3,P=P)
-# model3.EM()
-
-# model4 = hmm(data_gen, lengths_gen, 3)
-# model4.SEM()
-
-# model5 = KDE_AsHMM(data_gen, lengths_gen, 3,p=p,G=G,P=P)
-# model5.EM()
-
-# model6 = KDE_AsHMM(data_gen, lengths_gen, 3,P=P)
+model2 = KDE_AsHMM(data_gen, 3,P=P)
+model2.copy(model1)
+model2.SEM()
 
 
-# data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
-# ll1 = model1.log_likelihood(data_gen_test )
-# ll2 = model2.log_likelihood(data_gen_test )
-# ll3 = model3.log_likelihood(data_gen_test )
-# ll4 = model4.log_likelihood(data_gen_test )
-# ll5 = model5.log_likelihood(data_gen_test )
-# ll6 =  model6.log_likelihood(data_gen_test )
-# print("Likelihood KDE-HMM:               "+ str(ll1))
-# print("Likelihood KDE-AsHMM:             "+ str(ll2))
-# print("Likelihood HMM:                   "+ str(ll3))
-# print("Likelihood AR-AsLG-HMM:           "+ str(ll4))
-# print("Likelihood KDE-HMM with known BN: "+ str(ll5))
-# print("Likelihood KDE-HMM no train:      "+ str(ll6))
-# # Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
-# # Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
-# # debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
+model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
+model21.copy(model1)
+model21.SEM()
+
+
+model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
+model22.copy(model1)
+model22.SEM()
+
+model3 = hmm(data_gen,lengths_gen, 3,P=P)
+model3.EM()
+
+model4 = hmm(data_gen, lengths_gen, 3,P=P,G=G,p=p)
+model4.EM()
+
+model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
+model5.EM()
+
+model6 = KDE_AsHMM(data_gen, 3,P=P)
+
+
+data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+ll1  = model1.log_likelihood(data_gen_test )
+ll2  = model2.log_likelihood(data_gen_test )
+ll21 = model21.log_likelihood(data_gen_test )
+ll22 = model22.log_likelihood(data_gen_test )
+ll3  = model3.log_likelihood(data_gen_test )
+ll4  = model4.log_likelihood(data_gen_test )
+ll5  = model5.log_likelihood(data_gen_test )
+ll6  = model6.log_likelihood(data_gen_test )
+print("Likelihood KDE-HMM:               "+ str(ll1))
+print("Likelihood KDE-AsHMM:             "+ str(ll2))
+print("Likelihood KDE-AsHMM no BN opt:   "+ str(ll21))
+print("Likelihood KDE-AsHMM no AR opt:   "+ str(ll22))
+print("Likelihood HMM:                   "+ str(ll3))
+print("Likelihood AR-AsLG-HMM:           "+ str(ll4))
+print("Likelihood KDE-HMM with known BN: "+ str(ll5))
+print("Likelihood KDE-HMM no train:      "+ str(ll6))
+# Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
+# Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
+# debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
 
 
 # #%% generar datos
