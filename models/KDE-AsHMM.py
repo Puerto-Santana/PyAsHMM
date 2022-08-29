@@ -143,7 +143,8 @@ class KDE_AsHMM:
             
             # Ap = aux_model.A
             # self.A = Ap
-            A = np.random.uniform(0.01,0.99,[self.N,self.N])
+            A = np.ones([self.N,self.N])
+            np.fill_diagonal(A,999)
             self.A = A/np.sum(A,axis=1)
         else:
             if type(A) is np.ndarray:
@@ -230,7 +231,6 @@ class KDE_AsHMM:
             else:
                 raise Exception("pi must be a numpy array")
                     
-        print("Priors generated...")
         
     def gaussian_kernel(self,x):
         """
@@ -1910,7 +1910,7 @@ def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
         data = np.concatenate([data,di],axis=0)
     return data
 
-def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
+def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
     K = len(G)
     xt = np.ones([1,K])
     for i in L:
@@ -1919,7 +1919,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed):
         else:
             mean  = means[i]
             for w in range(K):
-                mean += f1(M[i][w]*xt[0][w])
+                mean += M[i][w]*f1(xt[0][w])
             for l in range(P):
                 ki = k[i]
                 f2m = M[i][K+l]*f2(seed[-l-1][i])
@@ -1973,7 +1973,6 @@ G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
 L          = []
 for i in range(3):
     lel = dag_v(G[i])
-    print(lel[0])
     L.append(lel[1])
 L            = np.array(L)
 P            = 2
@@ -1981,7 +1980,7 @@ p            = np.array([[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]])
 MT            = np.zeros([N,K,K+P])
 MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
 MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
-MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.89; MT[2][4][5] = 0.5
+MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.899; MT[2][4][5] = 0.5
 nses         = [100,200,300]
 seqss        = [0,1,2,1,0,2,0]
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
