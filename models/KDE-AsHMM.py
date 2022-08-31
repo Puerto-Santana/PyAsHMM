@@ -11,6 +11,8 @@ import os
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 from AR_ASLG_HMM  import AR_ASLG_HMM  as hmm
 class KDE_AsHMM:    
     def __init__(self,O,N,A=None, pi=None, h= None, M=None, v=None, 
@@ -592,18 +594,19 @@ class KDE_AsHMM:
         """
         for i in range(self.N):
             for k in range(self.K):
-                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.length)
+                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*self.length
                 sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                 while self.p[i][k] +1 <= self.P :
                     p2 = np.copy(self.p)
                     p2[i][k] = p2[i][k] +1
                     [h2,v2,M2] = self.act_params(self.G,self.G,self.p,p2)
                     for j in range(len(self.forback)):
-                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*(self.length)
+                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*self.length
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
                     if s2 > sm:
                         self.p = p2
                         self.M = M2
+                        self.h  = h2
                         sm  = s2
                     else:
                         break
@@ -654,7 +657,7 @@ class KDE_AsHMM:
                 possi = self.pos_ads(self.G[i])
                 son = possi[k][0]
                 if len(possi[k][1])!=0:
-                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*(self.length)
+                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*self.length
                     sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                     for j in possi[k][1]:
                         G2 = np.copy(self.G)
@@ -663,13 +666,14 @@ class KDE_AsHMM:
                         for nn in range(self.N):
                             L2.append(self.dag_v(G2[nn])[1])
                         [h2,v2,M2] = self.act_params(self.G,G2,self.p,self.p)
-                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*(self.length)
+                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*self.length
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
                         if s2>sm: 
                             sm= s2
                             self.M = M2
                             self.G = G2
                             self.L = L2
+                            self.h = h2
                         else:
                             break
 
@@ -1254,7 +1258,7 @@ class KDE_AsHMM:
         if root is not None:
             plt.savefig(root, dpi=600)
         
-    def plot_all_pairs_scatter(self,samples=500,root =None):
+    def plot_all_pairs_scatter(self,samples=500,root =None,name =""):
         """
         Plot scatter plots from the learned parameters for all pairs of variables
 
@@ -1265,7 +1269,8 @@ class KDE_AsHMM:
             DESCRIPTION. The default is 500. Number of instances for each sample for each hidden state
         root : TYPE, optional str
             DESCRIPTION. The default is None. route to save plot
-
+        name : TYPE, optional str
+            DESCRIPTION. The default is "". Name of the plot
         Returns
         -------
         None.
@@ -1280,7 +1285,7 @@ class KDE_AsHMM:
         else:
             n_cols = 6
             n_rows = np.ceil(n_plots/6)
-        plt.figure("Scatter plots  ")
+        plt.figure("Scatter plots "+name)
         plt.clf()
         for i in range(self.N):
             data = self.sample_state(samples,i)
@@ -1337,15 +1342,15 @@ class KDE_AsHMM:
             count = 1
             for p in range(1,self.P+1):
                 plt.subplot(n_rows,n_cols,count)
-                plt.scatter(data[p:,k],data[:-p,k],label ="state: " +str(i))
-                plt.xlabel("$X^t_"+str(k)+"$")
-                plt.ylabel("$X^{t-"+str(p)+"}_"+str(k)+"$")
+                plt.scatter(data[:-p,k],data[p:,k],label ="state: " +str(i))
+                plt.ylabel("$X^t_"+str(k)+"$")
+                plt.xlabel("$X^{t-"+str(p)+"}_"+str(k)+"$")
                 plt.legend()
                 plt.grid("on")
                 plt.subplot(n_rows,n_cols,count+1)
-                plt.scatter(self.O[p:,k], self.O[:-p,k],color="black")
-                plt.xlabel("$X^t_" + str(k)  + "$")
-                plt.ylabel("$X^{t-"+str(p)+"}_" + str(k)  + "$")
+                plt.scatter(self.O[:-p,k], self.O[p:,k],color="black")
+                plt.ylabel("$X^t_" + str(k)  + "$")
+                plt.xlabel("$X^{t-"+str(p)+"}_" + str(k)  + "$")
                 plt.grid("on")
                 count +=2
         plt.tight_layout()
@@ -1888,7 +1893,7 @@ def generate_2D(mean,sigma,k,roots,n,ar_coef):
         if t <lar:
             x1t = np.random.normal(mean,sigma,1)
         else:
-            x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.5*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
+            x1t = np.random.normal(mean+k*np.sin(2*np.pi*0.1*(np.dot(ar_coef[::-1],x1[-lar:]))),sigma,1)
             # x1t = np.random.normal(mean+np.dot(ar_coef[::-1],x1[-lar:]),sigma,1)
             # x1t = np.random.normal(mean,sigma,1)
         x1.append(x1t)
@@ -1910,45 +1915,13 @@ def generate_2D_seq(means,sigmas,ks,rootss,ns,ar_coef,seq):
         data = np.concatenate([data,di],axis=0)
     return data
 
-def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
-    K = len(G)
-    xt = np.ones([1,K])
-    for i in L:
-        if np.sum(M[i]) ==0 :
-            xt[0][i] = np.random.normal(means[i],sigma[i],1)
-        else:
-            mean  = means[i]
-            for w in range(K):
-                mean += M[i][w]*f1(xt[0][w])
-            for l in range(P):
-                ki = k[i]
-                f2m = M[i][K+l]*f2(seed[-l-1][i])
-                mean += ki*f2m
-            xt[0][i] = np.random.normal(mean,sigma[i],1)
-    return xt
-            
-def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
-    K = ncols 
-    x = np.ones([P,K])*means[np.newaxis]
-    for t in range(nrows):
-        xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
-        x = np.concatenate([x,xt],axis=0)
-    return x
-
-def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
-    ncols = len(means[0])
-    x = np.zeros([0,ncols])
-    for l in seq:
-        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
-        x = np.concatenate([x,xl],axis=0)
-    return x
-
+# Helpful functions
 
 def square(x):
     return np.sign(x)*np.abs(x)**2
 
 def sin(x):
-    return np.sin(2*np.pi*0.5*x)
+    return np.sin(2*np.pi*1.5*x)
 
 def ide(x):
     return x
@@ -1959,29 +1932,85 @@ def log_gaussian_kernel(x):
 
 def gaussian_kernel(x):
     return np.exp(-0.5*x**2)/np.sqrt(2*np.pi)
+
+# Generate multidimensional data
+
+def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
+    ncols = len(means[0])
+    x = np.zeros([0,ncols])
+    for l in seq:
+        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
+        x = np.concatenate([x,xl],axis=0)
+    return x
+
+
+def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
+    K = ncols 
+    x = np.ones([P,K])*means[np.newaxis]
+    for t in range(nrows):
+        xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
+        x = np.concatenate([x,xt],axis=0)
+    return x
+
+
+def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
+    K = len(G)
+    xt = np.ones([1,K])
+    for i in L:
+        if np.sum(M[i]) ==0 :
+            xt[0][i] = np.random.normal(means[i],sigma[i],1)
+        else:
+            mean  = means[i]
+            for w in range(K):
+                mean += M[i][w]*f1(xt[0][w]-means[i])
+                # mean += M[i][w]*f1(xt[0][w])
+            for l in range(P):
+                ki = k[i]
+                f2m = f2(M[i][K+l]*(seed[-l-1][i]))
+                mean += ki*f2m
+            xt[0][i] = np.random.normal(mean,sigma[i],1)
+    return xt
+            
+
+
+
      
 
-#%% con más variables
+#%% TEST
 K = 7
 N=3
-means_g = np.array([ [2.3, 4.2, 3.5, 2.5, 1.2, 1, 2],[-2.1, 3.4, -2.4, 3.2, -4.1, 1 , 2], [-3.5 , -1.3, -4.4 , -0.5, -2.2, 1 , 2] ])
-sigmas_g = np.array( [[0.7, 0.7, 0.8, 0.6,0.21,0.5,0.6],[ 1, 0.8, 0.5 ,0.9 ,0.8,0.5,0.6], [0.8, 0.5, 0.7, 0.4, 0.8,0.5,0.6]])
-k = np.array([ 3, 2, 1, 3, 2, 1 ,1])
-G          = np.zeros([3,7,7])
-G[1][1][0] = 1; G[1][3][2]=1; G[1][4][0]=1 
-G[2][1][0] = 1; G[2][1][4]=1; G[2][2][3] =1; G[2][2][4] = 1; G[2][3][4] =1
+means_g = np.array([ [ 2.3,  4.2,  3.5,  2.5,  1.2, 1.0, 2.0],
+                     [-2.1,  3.4, -2.4,  3.2, -4.1, 1.0, 2.0], 
+                     [-3.5, -1.3, -4.4, -0.5, -2.2, 1.0, 2.0]])
+
+sigmas_g = np.array( [[0.3,  0.7,  0.8,  0.6,  0.7, 0.5, 0.6],
+                      [0.9,  0.8,  0.3,  0.9,  1.2, 0.5, 0.6], 
+                      [0.8,  0.5,  0.2,  0.4,  0.8, 0.5, 0.6]])
+
+k = np.array([ 1, 1, 1, 1, 1, 1 ,1])
+
+G = np.zeros([3,7,7])
+G[1][1][0] = 1; G[1][3][2] = 1; G[1][4][1] = 1; 
+G[2][1][0] = 1; G[2][3][0] = 1; G[2][4][3] = 1; G[2][5][3] = 1; G[2][5][6] = 1 ; G[2][6][2] =1 ; G[2][2][0]  =1
+
 L          = []
 for i in range(3):
     lel = dag_v(G[i])
     L.append(lel[1])
+
 L            = np.array(L)
 P            = 2
-p            = np.array([[0,0,0,0,0,0,0],[0,1,0,1,0,0,0],[1,2,1,2,1,0,0]])
+p            = np.array([[0,0,0,0,0,0,0],
+                         [0,1,0,1,0,0,0],
+                         [1,2,1,2,1,0,0]])
+
 MT            = np.zeros([N,K,K+P])
-MT[1][1][0]   =  1.5  ; MT[1][3][2] = 1.2 ; MT[1][4][0] = -0.6 ; MT[1][1][5] = 0.6 ; MT[1][3][5] = 0.2
-MT[2][1][0]   = -1.3  ; MT[2][1][4] = 1.4 ; MT[2][2][3] = -1.8 ; MT[2][2][4] = 2.3 ; MT[2][3][4] = 0.5 
-MT[2][0][5]   =  0.2  ; MT[2][1][5] = 0.1 ; MT[2][1][6] =  0.4 ; MT[2][2][5] = 0.5 ; MT[2][3][5] = 0.1;  MT[2][3][6]= 0.899; MT[2][4][5] = 0.5
-nses         = [100,200,300]
+MT[1][1][0] = 1; MT[1][3][2] = 1; MT[1][4][1] = 1; 
+MT[2][1][0] = 1; MT[2][3][0] = 1; MT[2][4][3] = 1; MT[2][5][3] = 1; MT[2][5][6] = 1 ; MT[2][6][2] =1 ; G[2][2][0]  =1
+
+MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
+MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.5; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.80
+nses         = [400,400,400]
 seqss        = [0,1,2,1,0,2,0]
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
 lengths_gen  = np.array([len(data_gen)])
@@ -1994,11 +2023,9 @@ model2 = KDE_AsHMM(data_gen, 3,P=P)
 model2.copy(model1)
 model2.SEM()
 
-
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
 model21.copy(model1)
 model21.SEM()
-
 
 model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
 model22.copy(model1)
@@ -2007,7 +2034,7 @@ model22.SEM()
 model3 = hmm(data_gen,lengths_gen, 3,P=P)
 model3.EM()
 
-model4 = hmm(data_gen, lengths_gen, 3,P=P,G=G,p=p)
+model4 = hmm(data_gen, lengths_gen, 3)
 model4.EM()
 
 model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
@@ -2036,80 +2063,13 @@ print("Likelihood KDE-HMM no train:      "+ str(ll6))
 # Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
 # Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
 # debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
+#%% TEST 2
 
+ar_data = np.concatenate([data_gen[:,2][np.newaxis],np.roll(data_gen[:,2],1)[np.newaxis],np.roll(data_gen[:,2],2)[np.newaxis]],axis=0)
+ar_data = ar_data.T[2:]
+ar_model = KDE_AsHMM(ar_data, 3,P=P)
+ar_model.EM()
 
-# #%% generar datos
-# means =  [0.5,1.5,5.5]
-# sigmas = [1.0,0.8,0.7]
-# ks = [5,-5,2.5]
-# rootss = [[2,-1],[0,3],[5,6]]
-# ns =  [200,200,200]  #entre menos valores, mas estructura aparece y es más importante, entre más datos, la estrucutra deja de ser relevante
-# ar_coef = [[0.4,0.5],[-0.4,-0.2],[0.6,0]]
-# seq = [0,1,2,1,0,2,1,2,2,1,1]
-# data = generate_2D_seq(means, sigmas, ks, rootss, ns,ar_coef, seq)
-# lengths = np.array([len(data)])
-# plt.figure("Data scatter")
-# plt.clf()
-# plt.title("Distribution from samples")
-# plt.scatter(data[:,0],data[:,1])
-# plt.grid("on")
-# plt.xlabel("$x_1$")
-# plt.ylabel("$x_2$")
-# plt.tight_layout()
-# P=2
-# k  = 0 
-# ar = 1
-# plt.figure("Data scatter AR")
-# plt.clf()
-# plt.scatter(data[ar:,k],data[:-ar,k])
-# plt.grid("on")
-# plt.xlabel("$x_{"+str(k)+"}^{t}$")
-# plt.ylabel("$x_{"+str(k)+"}^{t-"+str(ar)+"}$")
-# plt.tight_layout()
-# root = r"C:\Users\fox_e\Dropbox\Doctorado\Software\HMM_develop\C\C++"
-# np.savetxt(root + r'\prueba.csv',data,delimiter = ",")
-
-# model1 = KDE_AsHMM(data, 3,P=P)
-# model1.EM()
-
-# model2 = KDE_AsHMM(data, 3,P=P)
-# model2.SEM()
-
-
-# G2 = []
-# for i in range(3):
-#     Gi = np.array([[0,1],[0,0]])
-#     G2.append(Gi)
-# p2 = np.array([[2,0],[2,0],[1,0]])
-
-# model3 = hmm(data, lengths, 3,P=P)
-# model3.EM()
-
-# model4 = hmm(data, lengths, 3,P=P)
-# model4.SEM()
-
-# model5 = KDE_AsHMM(data, 3,p=p2,G=G2,P=P)
-# model5.EM()
-
-# #%% Comparación likelihood
-# ns_test =  [600,400,700]
-# test_data = generate_2D_seq(means, sigmas, ks, rootss, ns_test, ar_coef,seq)
-# ll1 = model1.log_likelihood(test_data)
-# ll2 = model2.log_likelihood(test_data)
-# ll3 = model3.log_likelihood(test_data)
-# ll4 = model4.log_likelihood(test_data)
-# ll5 = model5.log_likelihood(test_data)
-
-# print("Likelihood KDE-HMM:         "+ str(ll1))
-# print("Likelihood KDE-AsHMM:       "+ str(ll2))
-# print("Likelihood HMM:             "+ str(ll3))
-# print("Likelihood AR-AsLG-HMM:     "+ str(ll4))
-# print("Likelihood KDE-HMM BN know: "+ str(ll5))
-        
-        
-        
-        
-        
         
         
         
