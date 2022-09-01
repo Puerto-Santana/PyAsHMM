@@ -50,7 +50,7 @@ def dag_v(G):
 # Helpful functions
 
 def square(x):
-    return np.sign(x)*np.abs(x)**2
+    return x**2
 
 def sin(x):
     return np.sin(2*np.pi*1.5*x)
@@ -70,7 +70,7 @@ def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
     ncols = len(means[0])
     x = np.zeros([P,ncols])
     for l in seq:
-        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k,x)
+        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k[l],x)
         x = np.concatenate([x,xl],axis=0)
     return x[P:]
 
@@ -92,11 +92,10 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
         else:
             mean  = means[i]
             for w in range(K):
-                mean += M[i][w]*f1(means[i]-xt[0][w])-k[i]*np.sign(M[i][w])
+                mean += M[i][w]*f1(means[w]-xt[0][w])+k[i]
             for l in range(P):
-                ki = k[i]
-                f2m = f2(M[i][K+l]*(seed[-l-1][i]))
-                mean += ki*f2m
+                f2m = M[i][K+l]*f2((seed[-l-1][i]))
+                mean += f2m
             xt[0][i] = np.random.normal(mean,sigma[i],1)
     return xt
             
@@ -106,19 +105,11 @@ N       = 3
 nses    = [250,250,250]
 seqss   = [0,1,2,1,0,2,0]
 
-means_g = np.array([ [  0,   0,   0,    0,    0, 1.0, 2.0],
-                     [  0,   0,   0,    0,    0, 1.0, 2.0], 
-                     [  0,   0,   0,    0,    0, 1.0, 2.0]])
-
-sigmas_g = np.array( [[1,  1,  1,  1,  1, 0.5, 0.6],
-                      [1,  1,  1,  1,  1, 0.5, 0.6], 
-                      [1,  1,  1,  1,  1, 0.5, 0.6]])
-
-k = np.array([ 1, 1, 1, 1, 1,1 ,1])
-
 G = np.zeros([3,7,7])
-G[1][1][0] = 1; G[1][3][0] = 1; G[1][4][3] = 1
-G[2][1][0] = 1; G[2][3][0] = 1; G[2][4][3] = 1;  G[2][2][0]  =1
+G[1][1][0] = 1; G[1][2][0] = 1; G[1][4][3] = 1
+G[2][1][0] = 1; G[2][2][0] = 1; G[2][4][3] = 1;  G[2][3][0]  =1; G[2][4][0]  =1
+
+k = np.zeros([N,K])
 
 L          = []
 for i in range(3):
@@ -132,15 +123,23 @@ p            = np.array([[0,0,0,0,0,0,0],
                          [0,1,0,1,0,0,0],
                          [1,2,1,2,1,0,0]])
 
-MT            = np.zeros([N,K,K+P])
-MT[1][1][0] = 1; MT[1][3][2] = 1; MT[1][4][1] = 1 
-MT[2][1][0] = 1; MT[2][3][0] = 1; MT[2][4][3] = 1; MT[2][2][0]  = 1
+means_g = np.array([ [    0,    -10,  20,     0,    8, 1.0, 2.0],
+                     [    2,    -1,     3,     2,    2, 1.0, 2.0], 
+                     [   -2,     2,    -3,    -2,   -2, 1.0, 2.0]])
 
-# MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
-# MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.6
+sigmas_g = np.array( [[0.1,   0.3,  0.5,  0.2,  1.8, 0.5, 0.6],
+                      [1,     0.7,  0.2,  1.2,  1.4, 0.5, 0.6], 
+                      [2,     0.5,  0.6,  1.3,  0.2, 0.5, 0.6]])
+
+MT            = np.zeros([N,K,K+P])
+MT[1][1][0] = 1.5; MT[1][2][0] =  -0.9; MT[1][4][3] = 2 
+MT[2][1][0] = -0.9; MT[2][2][0] = 1.5; MT[2][4][3] = -2 
+
+MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
+MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.6
 
 #%% Training models
-data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
 lengths_gen  = np.array([len(data_gen)])
 
 model1 = KDE_AsHMM(data_gen, 3,P=P)
