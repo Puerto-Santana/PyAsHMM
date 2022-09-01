@@ -5,13 +5,14 @@ Created on Thu Sep  1 09:53:14 2022
 @Licence: CC BY 4.0
 """
 import numpy as np
-# import os
-# path = os.getcwd()
-# models = os.path.dirname(path)
-# os.chdir(models)
+import matplotlib.pyplot as plt
+import os
+path = os.getcwd()
+models = os.path.dirname(path)
+os.chdir(models)
 from KDE_AsHMM import KDE_AsHMM
 from AR_ASLG_HMM import AR_ASLG_HMM as hmm
-#%%Functions to generate data
+#%% Functions to generate synthetic data
 
 def dag_v(G):
     """
@@ -57,7 +58,6 @@ def sin(x):
 def ide(x):
     return x
 
-
 def log_gaussian_kernel(x):
     return -0.5*(x**2+np.log(2*np.pi))
 
@@ -68,20 +68,19 @@ def gaussian_kernel(x):
 
 def gen_nl_random(ns,seq,G,L,P,p,M,means,sigma,k,f1,f2):
     ncols = len(means[0])
-    x = np.zeros([0,ncols])
+    x = np.zeros([P,ncols])
     for l in seq:
-        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k)
+        xl = gen_nl_random_l(ncols, ns[l], G[l], L[l], P, p[l], M[l], means[l], sigma[l], f1,f2,k,x)
         x = np.concatenate([x,xl],axis=0)
-    return x
+    return x[P:]
 
 
-def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k):
-    K = ncols 
-    x = np.ones([P,K])*means[np.newaxis]
+def gen_nl_random_l(ncols,nrows,G,L,P,p,M,means,sigma,f1,f2,k,y):
+    x = y[-P:]
     for t in range(nrows):
         xt = gen_nl_random_1sample(G, L, P, p, M, means, sigma, f1,f2,k, x[-P:])
         x = np.concatenate([x,xt],axis=0)
-    return x
+    return x[P:]
 
 
 def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
@@ -93,8 +92,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
         else:
             mean  = means[i]
             for w in range(K):
-                mean += M[i][w]*f1(xt[0][w]-means[i])
-                # mean += M[i][w]*f1(xt[0][w])
+                mean += M[i][w]*f1(means[i]-xt[0][w])-k[i]*np.sign(M[i][w])
             for l in range(P):
                 ki = k[i]
                 f2m = f2(M[i][K+l]*(seed[-l-1][i]))
@@ -102,31 +100,30 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
             xt[0][i] = np.random.normal(mean,sigma[i],1)
     return xt
             
+#%% Generating data
+K       = 7
+N       = 3
+nses    = [250,250,250]
+seqss   = [0,1,2,1,0,2,0]
 
+means_g = np.array([ [  0,   0,   0,    0,    0, 1.0, 2.0],
+                     [  0,   0,   0,    0,    0, 1.0, 2.0], 
+                     [  0,   0,   0,    0,    0, 1.0, 2.0]])
 
+sigmas_g = np.array( [[1,  1,  1,  1,  1, 0.5, 0.6],
+                      [1,  1,  1,  1,  1, 0.5, 0.6], 
+                      [1,  1,  1,  1,  1, 0.5, 0.6]])
 
-     
-
-#%% TEST
-K = 7
-N=3
-means_g = np.array([ [ 2.3,  4.2,  3.5,  2.5,  1.2, 1.0, 2.0],
-                     [-2.1,  3.4, -2.4,  3.2, -4.1, 1.0, 2.0], 
-                     [-3.5, -1.3, -4.4, -0.5, -2.2, 1.0, 2.0]])
-
-sigmas_g = np.array( [[0.3,  0.7,  0.8,  0.6,  0.7, 0.5, 0.6],
-                      [0.9,  0.8,  0.3,  0.9,  1.2, 0.5, 0.6], 
-                      [0.8,  0.5,  0.2,  0.4,  0.8, 0.5, 0.6]])
-
-k = np.array([ 1, 1, 1, 1, 1, 1 ,1])
+k = np.array([ 1, 1, 1, 1, 1,1 ,1])
 
 G = np.zeros([3,7,7])
-G[1][1][0] = 1; G[1][3][2] = 1; G[1][4][1] = 1; 
-G[2][1][0] = 1; G[2][3][0] = 1; G[2][4][3] = 1; G[2][5][3] = 1; G[2][5][6] = 1 ; G[2][6][2] =1 ; G[2][2][0]  =1
+G[1][1][0] = 1; G[1][3][0] = 1; G[1][4][3] = 1
+G[2][1][0] = 1; G[2][3][0] = 1; G[2][4][3] = 1;  G[2][2][0]  =1
 
 L          = []
 for i in range(3):
     lel = dag_v(G[i])
+    print(lel[0])
     L.append(lel[1])
 
 L            = np.array(L)
@@ -136,24 +133,21 @@ p            = np.array([[0,0,0,0,0,0,0],
                          [1,2,1,2,1,0,0]])
 
 MT            = np.zeros([N,K,K+P])
-MT[1][1][0] = 1; MT[1][3][2] = 1; MT[1][4][1] = 1; 
-MT[2][1][0] = 1; MT[2][3][0] = 1; MT[2][4][3] = 1; MT[2][5][3] = 1; MT[2][5][6] = 1 ; MT[2][6][2] =1 ; G[2][2][0]  =1
+MT[1][1][0] = 1; MT[1][3][2] = 1; MT[1][4][1] = 1 
+MT[2][1][0] = 1; MT[2][3][0] = 1; MT[2][4][3] = 1; MT[2][2][0]  = 1
 
-MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
-MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.5; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.80
-nses         = [100,100,100]
-seqss        = [0,1,2,1,0,2,0]
+# MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
+# MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.6
+
+#%% Training models
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
 lengths_gen  = np.array([len(data_gen)])
 
-
 model1 = KDE_AsHMM(data_gen, 3,P=P)
 model1.EM()
-v =model1.v
 
 
 model2 = KDE_AsHMM(data_gen, 3,P=P)
-# model2.copy(model1)
 model2.SEM()
 
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
@@ -170,34 +164,42 @@ model3.EM()
 model4 = hmm(data_gen, lengths_gen, 3,P=P)
 model4.SEM()
 
-model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P,v=v)
+model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
 model5.EM()
 
-model6 = KDE_AsHMM(data_gen, 3,P=P)
+#%% Testing
+ll1  = []
+ll2  = []
+ll21 = []
+ll22 = []
+ll3  = []
+ll4  = []
+ll5  = []
+for t in range(100):
+    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+    ll1.append(model1.log_likelihood(data_gen_test ))
+    ll2.append(model2.log_likelihood(data_gen_test ))
+    ll21.append(model21.log_likelihood(data_gen_test ))
+    ll22.append(model22.log_likelihood(data_gen_test ))
+    ll3.append(model3.log_likelihood(data_gen_test ))
+    ll4.append(model4.log_likelihood(data_gen_test ))
+    ll5.append(model5.log_likelihood(data_gen_test ))
+        
+ll1  = np.array(ll1)
+ll2  = np.array(ll2)
+ll21 = np.array(ll21)
+ll22 = np.array(ll22)
+ll3  = np.array(ll3)
+ll4  = np.array(ll4)
+ll5  = np.array(ll5)
 
-mod2 = KDE_AsHMM(data_gen, 3,P=P)
-mod2.copy(model2)
-
-data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
-ll1  = model1.log_likelihood(data_gen_test )
-ll2  = model2.log_likelihood(data_gen_test )
-ll21 = model21.log_likelihood(data_gen_test )
-ll22 = model22.log_likelihood(data_gen_test )
-ll3  = model3.log_likelihood(data_gen_test )
-ll4  = model4.log_likelihood(data_gen_test )
-ll5  = model5.log_likelihood(data_gen_test )
-ll6  = model6.log_likelihood(data_gen_test )
-print("Likelihood KDE-HMM:               "+ str(ll1))
-print("Likelihood KDE-AsHMM:             "+ str(ll2))
-print("Likelihood KDE-AsHMM no BN opt:   "+ str(ll21))
-print("Likelihood KDE-AsHMM no AR opt:   "+ str(ll22))
-print("Likelihood HMM:                   "+ str(ll3))
-print("Likelihood AR-AsLG-HMM:           "+ str(ll4))
-print("Likelihood KDE-HMM with known BN: "+ str(ll5))
-print("Likelihood KDE-HMM no train:      "+ str(ll6))
-# Toco cmabiar el penalty, pero ya se obtienen grafos más razonables, se cambio ln(T) -> T
-# Si se le entrega una inicialización de v aleatoria, puede llevar a resultados muy buenos o muy malos
-# debe buscarse una forma de iniciar el vector v tal que ayude a descubrir patrones lineales y no lineales, y pueda ser replicable...
+print("Likelihood KDE-HMM:               "+ str(np.mean(ll1)))
+print("Likelihood KDE-AsHMM:             "+ str(np.mean(ll2)))
+print("Likelihood KDE-AsHMM no BN opt:   "+ str(np.mean(ll21)))
+print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
+print("Likelihood HMM:                   "+ str(np.mean(ll3)))
+print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
+print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
 #%% TEST 2
 
 ar_data = np.concatenate([data_gen[:,2][np.newaxis],np.roll(data_gen[:,2],1)[np.newaxis],np.roll(data_gen[:,2],2)[np.newaxis]],axis=0)

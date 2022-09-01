@@ -217,7 +217,7 @@ class KDE_AsHMM:
             # vv = aux_model.forBack[0].gamma
             # vv = vv/np.sum(vv,axis=0)
             # self.v  = vv
-            vv = np.random.uniform(0.4,0.6,[self.length-self.P,3])
+            vv = np.random.uniform(0.4,0.6,[self.length-self.P,self.N])
             self.v = vv/np.sum(vv,axis=0)
         else:
             if type(v) is np.ndarray:
