@@ -9,7 +9,7 @@ import datetime
 import os
 import numpy as np
 import networkx as nx
-from sklearn.cluster import KMeans
+# from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 class AR_ASLG_HMM:    
     def __init__(self,O,lengths,N,p=None,P=None,A=None,pi=None,G=None,
