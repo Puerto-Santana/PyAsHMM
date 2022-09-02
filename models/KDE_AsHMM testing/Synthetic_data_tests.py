@@ -5,8 +5,10 @@ Created on Thu Sep  1 09:53:14 2022
 @Licence: CC BY 4.0
 """
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 import os
+import warnings
+warnings.filterwarnings("ignore")
 path = os.getcwd()
 models = os.path.dirname(path)
 os.chdir(models)
@@ -145,16 +147,13 @@ lengths_gen  = np.array([len(data_gen)])
 model1 = KDE_AsHMM(data_gen, 3,P=P)
 model1.EM()
 
-
 model2 = KDE_AsHMM(data_gen, 3,P=P)
 model2.SEM()
 
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
-model21.copy(model1)
 model21.SEM()
 
 model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
-model22.copy(model1)
 model22.SEM()
 
 model3 = hmm(data_gen,lengths_gen, 3,P=P)
@@ -165,8 +164,24 @@ model4.SEM()
 
 model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
 model5.EM()
-
+#%% Save models
+model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
+model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
+model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
+model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
+model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
+model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
+model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
+#%% Load models
+model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
+model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
+model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
+model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
+model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
+model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
+model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
 #%% Testing
+pruebas =20
 ll1  = []
 ll2  = []
 ll21 = []
@@ -174,8 +189,8 @@ ll22 = []
 ll3  = []
 ll4  = []
 ll5  = []
-for t in range(100):
-    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+for t in range(pruebas):
+    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
     ll1.append(model1.log_likelihood(data_gen_test ))
     ll2.append(model2.log_likelihood(data_gen_test ))
     ll21.append(model21.log_likelihood(data_gen_test ))
@@ -183,14 +198,23 @@ for t in range(100):
     ll3.append(model3.log_likelihood(data_gen_test ))
     ll4.append(model4.log_likelihood(data_gen_test ))
     ll5.append(model5.log_likelihood(data_gen_test ))
+    print(str(round(100*(t+1)/(pruebas*1.),3))+"%")
         
+    
 ll1  = np.array(ll1)
+ll1  = ll1[~np.isnan(ll1)]
 ll2  = np.array(ll2)
+ll2  = ll2[~np.isnan(ll2)]
 ll21 = np.array(ll21)
+ll21 = ll21[~np.isnan(ll21)]
 ll22 = np.array(ll22)
+ll22 = ll22[~np.isnan(ll22)]
 ll3  = np.array(ll3)
+ll3  = ll3[~np.isnan(ll3)]
 ll4  = np.array(ll4)
+ll4  = ll4[~np.isnan(ll4)]
 ll5  = np.array(ll5)
+ll5  = ll5[~np.isnan(ll5)]
 
 print("Likelihood KDE-HMM:               "+ str(np.mean(ll1)))
 print("Likelihood KDE-AsHMM:             "+ str(np.mean(ll2)))
@@ -199,9 +223,3 @@ print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
 print("Likelihood HMM:                   "+ str(np.mean(ll3)))
 print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
 print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
-#%% TEST 2
-
-ar_data = np.concatenate([data_gen[:,2][np.newaxis],np.roll(data_gen[:,2],1)[np.newaxis],np.roll(data_gen[:,2],2)[np.newaxis]],axis=0)
-ar_data = ar_data.T[2:]
-ar_model = KDE_AsHMM(ar_data, 3,P=P)
-ar_model.EM()

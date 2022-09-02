@@ -1508,7 +1508,7 @@ class AR_ASLG_HMM:
         plt.pause(1)
         
         
-    def plot_all_pairs_scatter(self,samples=500):
+    def plot_all_pairs_scatter(self,samples=500,name="",root=None):
         
         n_plots = self.K*(self.K-1)
         if n_plots<6:
@@ -1539,7 +1539,7 @@ class AR_ASLG_HMM:
         plt.tight_layout()
         
 
-    def plot_AR_k_scatter(self,k,samples=500):
+    def plot_AR_k_scatter(self,k,samples=500,name="",root=None):
         
         n_plots = 2*self.P
         if n_plots<6:
@@ -1851,7 +1851,8 @@ class forback:
         self.beta = BETA
         self.ll = Clist
         self.gamma = np.exp(self.alpha+self.beta)/np.sum(np.exp(self.alpha+self.beta),axis=1)[np.newaxis].T
-    
+        
+        
     def checkzero(self,z):
         """
         Returns a modified vector z with no zero instances

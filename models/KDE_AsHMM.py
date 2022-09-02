@@ -1669,7 +1669,8 @@ class forBack:
         self.ll = Clist
         self.gamma = self.alpha*self.beta/np.sum(self.alpha*self.beta,axis=1)[np.newaxis].T
         self.psi = self.psi*self.gamma.T[np.newaxis].T
-        
+                #issues aqui!
+                
     def checkzero(self,z):
         """
         Returns a modified vector z with no zero instances
@@ -1724,7 +1725,7 @@ class forBack:
         arg = np.dot(A,self.probt[t]*beta)
         return arg
     
-    def act_aij(self,A,N,): 
+    def act_aij(self,A,N): 
         """
         Updates the transition matrix A
 
@@ -1734,10 +1735,6 @@ class forBack:
             DESCRIPTION. Transition matrix
         N : TYPE int
             DESCRIPTION. number of hidden states
-        O : TYPE
-            DESCRIPTION.
-        P : TYPE
-            DESCRIPTION.
 
         Returns
         -------

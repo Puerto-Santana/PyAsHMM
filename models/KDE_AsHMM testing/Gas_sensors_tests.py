@@ -13,4 +13,8 @@ path = os.getcwd()
 models = os.path.dirname(path)
 os.chdir(models)
 #%% Load data
-data_gas = pd.read_csv(r"C:\Users\fox_e\OneDrive\Documentos\datasets\Gas sensors\HT_Sensor_dataset.dat",header=0)
+data_gas = pd.read_csv(r"C:\Users\fox_e\OneDrive\Documentos\datasets\Activity recognition\Activity recognition exp\Activity recognition exp\Phones_accelerometer.csv",header=0)
+keys = {'bike', 'sit', 'stairsdown', 'stairsup', 'stand', 'walk'}
+
+def dataset_creation():
+    return None
