@@ -55,7 +55,7 @@ def square(x):
     return x**2
 
 def sin(x):
-    return np.sin(2*np.pi*1.5*x)
+    return np.sin(2*np.pi*2*x)
 
 def ide(x):
     return x
@@ -104,7 +104,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [250,250,250]
+nses    = [150,150,150]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -148,12 +148,15 @@ model1 = KDE_AsHMM(data_gen, 3,P=P)
 model1.EM()
 
 model2 = KDE_AsHMM(data_gen, 3,P=P)
+model2.copy(model1)
 model2.SEM()
 
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
+model21.copy(model1)
 model21.SEM()
 
 model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
+model22.copy(model1)
 model22.SEM()
 
 model3 = hmm(data_gen,lengths_gen, 3,P=P)
@@ -173,15 +176,15 @@ model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",
 model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
 model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
 #%% Load models
-model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
-model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
-model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
-model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
-model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
-model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
-model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
+# model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
+# model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
+# model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
+# model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
+# model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
+# model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
+# model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
 #%% Testing
-pruebas =20
+pruebas =4
 ll1  = []
 ll2  = []
 ll21 = []

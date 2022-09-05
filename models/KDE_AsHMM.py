@@ -578,10 +578,6 @@ class KDE_AsHMM:
                 plt.savefig(route+r"\Graph_g_"+str(round(g[dic[index]],2))+".pdf",dpi=600,bbox_inches="tight")
             plt.show()
             
-
-    
-    
-    
     def climb_ar(self):
         """
         Performs the AR optimization 
@@ -593,19 +589,20 @@ class KDE_AsHMM:
         """
         for i in range(self.N):
             for k in range(self.K):
-                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
+                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
                 sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                 while self.p[i][k] +1 <= self.P :
                     p2 = np.copy(self.p)
                     p2[i][k] = p2[i][k] +1
                     [h2,v2,M2] = self.act_params(self.G,self.G,self.p,p2)
                     for j in range(len(self.forback)):
-                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*np.log(self.length)**2
+                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k]+self.length)*np.log(self.length)
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
                     if s2 > sm:
-                        self.p = p2
-                        self.M = M2
+                        self.p  = p2
+                        self.M  = M2
                         self.h  = h2
+                        self.v[:,i]  = v2[:,i]
                         sm  = s2
                     else:
                         break
@@ -656,7 +653,7 @@ class KDE_AsHMM:
                 possi = self.pos_ads(self.G[i])
                 son = possi[k][0]
                 if len(possi[k][1])!=0:
-                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
+                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
                     sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                     for j in possi[k][1]:
                         G2 = np.copy(self.G)
@@ -665,10 +662,11 @@ class KDE_AsHMM:
                         for nn in range(self.N):
                             L2.append(self.dag_v(G2[nn])[1])
                         [h2,v2,M2] = self.act_params(self.G,G2,self.p,self.p)
-                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*np.log(self.length)**2
+                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k]+self.length)*np.log(self.length)*self.length
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
                         if s2>sm: 
                             sm= s2
+                            self.v[:,i] = v2[:,i]
                             self.M = M2
                             self.G = G2
                             self.L = L2
@@ -845,7 +843,7 @@ class KDE_AsHMM:
             self.v = v
             self.h = h
             self.M = M
-            likelinew = np.sum(-np.log(self.forback[0].ll))
+            likelinew = np.sum(-self.forback[0].ll)
             self.LogLtrain = likelinew
             self.act_probt()
             eps = likelinew-likeli
@@ -873,7 +871,7 @@ class KDE_AsHMM:
         print("EM optimization ended, it took: "+str(round(tock-tick,5))+"s or: " + str(round((tock-tick)/60.,5))+" min")
         
         
-    def SEM(self,err1=9e-1,err2=9e-1,its1=1,its2=50,plot=False): 
+    def SEM(self,err1=9e-1,err2=9e-1,its1=5,its2=50,plot=False): 
         """
         Computes the SEM algorithm
         
@@ -884,7 +882,7 @@ class KDE_AsHMM:
         err2 : TYPE, optional float
             DESCRIPTION. The default is 9e-1. error bound to end EM algorithm
         its1 : TYPE, optional int
-            DESCRIPTION. The default is 1. Number of iterations of the SEM algorithm
+            DESCRIPTION. The default is 5. Number of iterations of the SEM algorithm
         its2 : TYPE, optional int
             DESCRIPTION. The default is 50. Number of iterations of the EM algorithm
         plot : TYPE, optional bool
@@ -950,7 +948,7 @@ class KDE_AsHMM:
         T =len(x)
         fb = forBack()
         fb.prob_t(x,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
-        delta = np.log(self.pi)+np.log(fb.probt[0])
+        delta = np.log(self.pi)+fb.probt[0]
         deltat = [delta]
         psi = [np.zeros(len(self.pi))]
         for i in range(1,T-self.P):
@@ -995,7 +993,7 @@ class KDE_AsHMM:
             DESCRIPTION. Information of delta_{t+1} 
 
         """
-        return np.max(delta+np.log(self.A.T),axis=1)+np.log(fb.probt[t])
+        return np.max(delta+np.log(self.A.T),axis=1)+fb.probt[t]
     
     def log_likelihood(self,y,xunit=False):
         """
@@ -1024,15 +1022,33 @@ class KDE_AsHMM:
         fb.prob_t(y,self.O,self.M,self.p,self.G,self.P,self.v,self.h,train=False)
         fb.forward_backward(self.A,self.pi)
         Clist = fb.ll
-        log = np.sum(-np.log(Clist))
+        log = np.sum(-Clist)
         del fb
         if xunit == False:
             return log
         else:
             return log/float(len(y))
         
+    def sample_full(self,n,pseed =None):
+        if pseed is None:
+            semi = self.O[:self.P]
+        else:
+            semi = pseed
+        Q = []
+        data = semi
+        for t in range(n):
+            data_t = np.zeros(self.K)
+            if t == 0:
+                qt = np.argmax(np.random.multinomial(1,self.pi))
+            else:
+                qt = np.argmax(np.random.multinomial(1,self.A[qt]))
+            Q.append(qt)
+            data_t = self.sample_state(1,int(qt),data)
+            data = np.concatenate([data,data_t],axis=0)
+        return [data,Q]
         
-    def sample_state(self,n,i):
+        
+    def sample_state(self,n,i,seed= None):
         """
         Sample n instances from hidden state i
 
@@ -1055,7 +1071,10 @@ class KDE_AsHMM:
             raise Exception("Hidden state index i must be an integer")
         if  i<0 or i>=self.N:
             raise Exception("Hidden state index i does not exist")
-        semi = self.O[:self.P]
+        if seed is None:
+            semi = self.O[:self.P]
+        else:
+            semi = seed
         data = np.zeros([n,self.K])
         data = np.concatenate([semi,data],axis=0)
         vi = self.v[:,i]
@@ -1563,7 +1582,7 @@ class forBack:
                 np.fill_diagonal(arg,0)
             data[:,i] = np.sum(arg,axis=1)
             psi[:,i,:] = arg/(data[:,i].reshape([T-P,1]))
-        self.probt   = data
+        self.probt   = np.log(data)
         self.psi     = psi
 
         
@@ -1642,34 +1661,34 @@ class forBack:
 
         """
         T = len(self.probt)
-        alfa = pi*self.probt[0]
-        Cd = 1./np.sum(alfa)
+        alfa = np.log(pi) + self.probt[0]
+        Cd = -np.max(alfa)-np.log(np.sum(np.exp(alfa-np.max(alfa))))
         Clist = np.array([Cd])
-        alfa = alfa*Cd
+        Clist = np.array([Cd])
+        alfa = alfa+Cd
         ALFA = [alfa]
         for t in range(1,T):
             alfa = self.forward_step(alfa,A,t)
-            Cd = 1./np.sum(alfa)            
+            Cd = -np.max(alfa)-np.log(np.sum(np.exp(alfa-np.max(alfa))))
             Clist = np.concatenate([Clist,[Cd]])
-            alfa = Cd*alfa
+            alfa = Cd + alfa
             ALFA.append(alfa)
         ALFA= np.array(ALFA)
         self.alpha = ALFA
         
-        beta =np.ones(len(pi))
+        beta =np.zeros(len(pi))
         Clist =Clist[::-1]
-        beta = beta*Clist[0]
+        beta = beta + Clist[0]
         BETA = [beta]
         for t in range(1,T):
             beta = self.backward_step(beta,A,T-t)
-            beta = beta*Clist[t]
+            beta = beta + Clist[t]
             BETA.append(beta)
         BETA= np.flipud(np.array(BETA))
         self.beta = BETA
         self.ll = Clist
-        self.gamma = self.alpha*self.beta/np.sum(self.alpha*self.beta,axis=1)[np.newaxis].T
+        self.gamma = np.exp(self.alpha+self.beta)/np.sum(np.exp(self.alpha+self.beta),axis=1)[np.newaxis].T
         self.psi = self.psi*self.gamma.T[np.newaxis].T
-                #issues aqui!
                 
     def checkzero(self,z):
         """
@@ -1699,8 +1718,11 @@ class forBack:
             DESCRIPTION. alfa at time step t
 
         """
-        arg = np.dot(alfa,A)
-        return self.probt[t]*arg
+        maxi =np.max(alfa)
+        arg = np.dot(np.exp(alfa-maxi),A)
+        arg = self.checkzero(arg)
+        logaa = np.log(arg)
+        return self.probt[t] +maxi+logaa
 
 
     def backward_step(self,beta,A,t): 
@@ -1722,8 +1744,11 @@ class forBack:
             DESCRIPTION.
 
         """
-        arg = np.dot(A,self.probt[t]*beta)
-        return arg
+        maxi = np.max(beta)
+        arg = np.dot(A,np.exp(self.probt[t]+beta-maxi))
+        arg = self.checkzero(arg)
+        logba = np.log(arg)
+        return maxi+logba
     
     def act_aij(self,A,N): 
         """
@@ -1748,7 +1773,7 @@ class forBack:
         for i in range(N):
             alfat = (self.alpha.T[i])[:T-1] 
             betat = self.beta[1:].T 
-            num = A[i]*np.sum(alfat*betat*bj[1:].T,axis=1)
+            num = A[i]*np.sum(np.exp(alfat+betat+ bj[1:].T),axis=1)
             den = np.sum(num)
             nume.append(num)
             deno.append(den)

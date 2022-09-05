@@ -12,7 +12,7 @@ models = os.path.dirname(path)
 os.chdir(models)
 import pandas as pd
 from KDE_AsHMM import KDE_AsHMM 
-from AR_ASLG_HMM import AR_ASLG_HMM
+from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 #%% Dataset 
 root_train = r"C:\Users\fox_e\OneDrive\Documentos\datasets\BDD_IMS_100ms"
 n_ar = 1
@@ -93,19 +93,37 @@ test13 =((np.array(O3t).T))[:6200]
 test14 =((np.array(O4t).T))[:6200]
 
 
-test11 = (test11-np.min(train1,axis=0))/(np.max(train1,axis=0)-np.min(train1,axis=0))
-test12 = (test12-np.min(train2,axis=0))/(np.max(train2,axis=0)-np.min(train2,axis=0))
-test13 = (test13-np.min(train3,axis=0))/(np.max(train3,axis=0)-np.min(train3,axis=0))
-test14 = (test14-np.min(train4,axis=0))/(np.max(train4,axis=0)-np.min(train4,axis=0))
+test11 = (test11-np.min(train1,axis=0))/(np.max(train1,axis=0)-np.min(train1,axis=0))*1000
+test12 = (test12-np.min(train2,axis=0))/(np.max(train2,axis=0)-np.min(train2,axis=0))*1000
+test13 = (test13-np.min(train3,axis=0))/(np.max(train3,axis=0)-np.min(train3,axis=0))*1000
+test14 = (test14-np.min(train4,axis=0))/(np.max(train4,axis=0)-np.min(train4,axis=0))*1000
 
-train1 = (train1-np.min(train1,axis=0))/(np.max(train1,axis=0)-np.min(train1,axis=0))
-train2 = (train2-np.min(train2,axis=0))/(np.max(train2,axis=0)-np.min(train2,axis=0))
-train3 = (train3-np.min(train3,axis=0))/(np.max(train3,axis=0)-np.min(train3,axis=0))
-train4 = (train4-np.min(train4,axis=0))/(np.max(train4,axis=0)-np.min(train4,axis=0))
+train1 = (train1-np.min(train1,axis=0))/(np.max(train1,axis=0)-np.min(train1,axis=0))*1000
+train2 = (train2-np.min(train2,axis=0))/(np.max(train2,axis=0)-np.min(train2,axis=0))*1000
+train3 = (train3-np.min(train3,axis=0))/(np.max(train3,axis=0)-np.min(train3,axis=0))*1000
+train4 = (train4-np.min(train4,axis=0))/(np.max(train4,axis=0)-np.min(train4,axis=0))*1000
 #%% Training
 N= 4
-model1 = KDE_AsHMM(train2,N) 
+model1 = KDE_AsHMM(train1, N,P=1)
 model1.EM()
+
+model2 = KDE_AsHMM(train1, N,P=1)
+model2.copy(model1)
+model2.SEM()
+
+model21 = KDE_AsHMM(train1, N,P=1,struc=False)
+model21.copy(model1)
+model21.SEM()
+
+model22 = KDE_AsHMM(train1, N,P=1,lags=False)
+model22.copy(model1)
+model22.SEM()
+
+model3 = hmm(train1,np.array([len(train1)]), N,P=1)
+model3.EM()
+
+model4 = hmm(train1, np.array([len(train1)]), N,P=1)
+model4.SEM()
 
 
 
