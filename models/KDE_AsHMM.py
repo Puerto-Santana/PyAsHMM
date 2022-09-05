@@ -590,6 +590,7 @@ class KDE_AsHMM:
         for i in range(self.N):
             for k in range(self.K):
                 pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
+                # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
                 sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                 while self.p[i][k] +1 <= self.P :
                     p2 = np.copy(self.p)
@@ -597,6 +598,7 @@ class KDE_AsHMM:
                     [h2,v2,M2] = self.act_params(self.G,self.G,self.p,p2)
                     for j in range(len(self.forback)):
                         pena= 0.5*(np.sum(self.G[i][k])+p2[i][k]+self.length)*np.log(self.length)
+                        # pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*np.log(self.length)**2
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
                     if s2 > sm:
                         self.p  = p2
@@ -654,6 +656,7 @@ class KDE_AsHMM:
                 son = possi[k][0]
                 if len(possi[k][1])!=0:
                     pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
+                    # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
                     sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                     for j in possi[k][1]:
                         G2 = np.copy(self.G)
@@ -662,7 +665,8 @@ class KDE_AsHMM:
                         for nn in range(self.N):
                             L2.append(self.dag_v(G2[nn])[1])
                         [h2,v2,M2] = self.act_params(self.G,G2,self.p,self.p)
-                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k]+self.length)*np.log(self.length)*self.length
+                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k]+self.length)*np.log(self.length)
+                        # pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*np.log(self.length)**2
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
                         if s2>sm: 
                             sm= s2
@@ -871,7 +875,7 @@ class KDE_AsHMM:
         print("EM optimization ended, it took: "+str(round(tock-tick,5))+"s or: " + str(round((tock-tick)/60.,5))+" min")
         
         
-    def SEM(self,err1=9e-1,err2=9e-1,its1=5,its2=50,plot=False): 
+    def SEM(self,err1=9e-1,err2=9e-1,its1=3,its2=50,plot=False): 
         """
         Computes the SEM algorithm
         
@@ -882,7 +886,7 @@ class KDE_AsHMM:
         err2 : TYPE, optional float
             DESCRIPTION. The default is 9e-1. error bound to end EM algorithm
         its1 : TYPE, optional int
-            DESCRIPTION. The default is 5. Number of iterations of the SEM algorithm
+            DESCRIPTION. The default is 3. Number of iterations of the SEM algorithm
         its2 : TYPE, optional int
             DESCRIPTION. The default is 50. Number of iterations of the EM algorithm
         plot : TYPE, optional bool

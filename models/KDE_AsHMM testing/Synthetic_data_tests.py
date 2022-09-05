@@ -168,13 +168,13 @@ model4.SEM()
 model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
 model5.EM()
 #%% Save models
-model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
-model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
-model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
-model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
-model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
-model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
-model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
+# model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
+# model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
+# model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
+# model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
+# model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
+# model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
+# model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
 #%% Load models
 # model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
 # model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
@@ -184,7 +184,7 @@ model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",
 # model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
 # model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
 #%% Testing
-pruebas =4
+pruebas =100
 ll1  = []
 ll2  = []
 ll21 = []
