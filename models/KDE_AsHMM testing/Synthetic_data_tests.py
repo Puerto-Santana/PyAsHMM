@@ -104,7 +104,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [150,150,150]
+nses    = [100,100,100]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -141,7 +141,7 @@ MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6
 MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.6
 
 #%% Training models
-data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
 lengths_gen  = np.array([len(data_gen)])
 
 model1 = KDE_AsHMM(data_gen, 3,P=P)
@@ -168,13 +168,13 @@ model4.SEM()
 model5 = KDE_AsHMM(data_gen,  3,p=p,G=G,P=P)
 model5.EM()
 #%% Save models
-# model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
-# model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
-# model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
-# model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
-# model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
-# model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
-# model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
+model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
+model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
+model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
+model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
+model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
+model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
+model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
 #%% Load models
 # model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
 # model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
@@ -184,7 +184,7 @@ model5.EM()
 # model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
 # model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
 #%% Testing
-pruebas =100
+pruebas =5
 ll1  = []
 ll2  = []
 ll21 = []
@@ -193,7 +193,7 @@ ll3  = []
 ll4  = []
 ll5  = []
 for t in range(pruebas):
-    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,sin)
+    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
     ll1.append(model1.log_likelihood(data_gen_test ))
     ll2.append(model2.log_likelihood(data_gen_test ))
     ll21.append(model21.log_likelihood(data_gen_test ))
