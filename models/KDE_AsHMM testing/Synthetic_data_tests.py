@@ -16,6 +16,30 @@ from KDE_AsHMM import KDE_AsHMM
 from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 #%% Functions to generate synthetic data
 
+# Funciones para hacer parsing
+
+def parse_results(ll,error,root,name):
+    means = np.mean(ll,axis=0)
+    stds    = np.std(ll,axis=0)
+    file = root+"\\"+name + ".txt"
+    f = open( file,"w")
+    f.write(r"\begin{table}"+"\n")
+    f.write(r"\begin{tabular}{cccc}"+"\n")
+    f.write("Model        &  mean LL & std LL & Viterbi error")
+    f.write(r"HMM         &"+str(round(means[0],2))+ " & " +str(round(stds[0],2))+ "&" +str(round(error[0],2))+"\n")
+    f.write(r"AR-AsLG-HMM &"+str(round(means[1],2))+ " & " +str(round(stds[1],2))+ "&" +str(round(error[1],2))+"\n")
+    f.write(r"KDE-HMM     &"+str(round(means[2],2))+ " & " +str(round(stds[2],2))+ "&" +str(round(error[2],2))+"\n")
+    f.write(r"KDE-ARHMM   &"+str(round(means[3],2))+ " & " +str(round(stds[3],2))+ "&" +str(round(error[3],2))+"\n")
+    f.write(r"HMM-BNHMM   &"+str(round(means[4],2))+ " & " +str(round(stds[4],2))+ "&" +str(round(error[4],2))+"\n")
+    f.write(r"HMM-AsHMM   &"+str(round(means[5],2))+ " & " +str(round(stds[5],2))+ "&" +str(round(error[5],2))+"\n")
+    f.write(r"\end{tabular}" +"\n")
+    f.write(r"\caption{Mean likelihood, log likelihood standard deviation and viterbi error for all the compared models}"+"\n" )
+    f.write(r"\label{table:synthetic_results}"+"\n" )
+    f.write(r"\end{table}")
+    f.close()
+
+
+
 def dag_v(G):
     """
     Executes the Kahn topological sorting  algorithm. 
@@ -226,3 +250,7 @@ print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
 print("Likelihood HMM:                   "+ str(np.mean(ll3)))
 print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
 print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
+
+
+
+

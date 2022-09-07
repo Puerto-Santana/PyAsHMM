@@ -85,24 +85,24 @@ def extract_data(atlas,fold,category,root):
         samplerate, sig = wavfile.read(root+"\\"+f)
         # playsound(root+"\\"+f)
         sig = sig.astype(float)
-        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T[:,1:])
+        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T)
         if np.sum(mfcc_feat) != 0:
             # test = np.concatenate([test,mfcc_feat],axis=0)
             test.append(mfcc_feat)
     
     leng = []
-    train = np.zeros([0,12])  
+    train = np.zeros([0,13])  
     for i in range(5):
         if i != fold:
-            traini = np.zeros([0,12])    
+            traini = np.zeros([0,13])    
             files = atlas[i][category]
             for f in files:
                 samplerate, sig = wavfile.read(root+"\\"+f)
                 sig = sig.astype(float)
-                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T[:,1:])
+                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T)
                 if np.sum(mfcc_feat) != 0:
                     traini = np.concatenate([traini,mfcc_feat],axis=0)
-                traini = traini+np.random.normal(0,1,[len(traini),12])
+                traini = traini+np.random.normal(0,0.1,[len(traini),13])
             train = np.concatenate([train,traini],axis=0)
             leng.append(len(traini))
     train = np.array(train)
@@ -199,7 +199,7 @@ def one_fold_model_training_testing(atlas,categories,n_hidden_states, fold, root
     return [models, count_matrix]
             
 
-def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM", P=4 ):
+def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM", P=4, root_models= None ):
     """
     
 
@@ -231,6 +231,16 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
     confusion_3   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 3, root,type_model,P=P)
     confusion_4   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 4, root,type_model,P=P)
     confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
+    models = [confusion_0[0],confusion_1[0],confusion_2[0],confusion_3[0],confusion_4[0]]
+    if root_models is not None:
+        for i in range(5):
+            rooti = root_models +"\\"+type_model+"-fold-"+str(i)
+            try:
+                os.mkdir(rooti)
+            except:
+                pass
+            for j, o in enumerate(categories):
+                models[i][o].save(rooti,name= type_model+"-"+categories[j])
     return confusion
 
 
@@ -249,10 +259,9 @@ for i in range(5):
             dic[cate].append(catalog["filename"][l])
     atlas.append(dic)
 #%% Prueba computo matrices de confusion para cada fold.
-# categories = ["dog","cat"]
-confusion_hmm     = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1)
-
-
-confusion_ashmm   = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1)
-confusion_kde     = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-HMM",P=1)
+root_models = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
+categories = ["dog","cat","hen"]
+confusion_hmm     = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1,root_models=root_models)
+confusion_ashmm   = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1,root_models=root_models)
+confusion_kde     = aggregated_confusion(atlas, categories,2, root,type_model = "KDE-HMM",P=1,root_models=root_models)
 
