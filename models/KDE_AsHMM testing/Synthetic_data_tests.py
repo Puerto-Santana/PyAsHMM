@@ -5,6 +5,7 @@ Created on Thu Sep  1 09:53:14 2022
 @Licence: CC BY 4.0
 """
 import numpy as np
+import time
 import matplotlib.pyplot as plt 
 import os
 import warnings
@@ -18,20 +19,21 @@ from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 
 # Funciones para hacer parsing
 
-def parse_results(ll,error,root,name):
+def parse_results(ll,error,times,root,name):
     means = np.mean(ll,axis=0)
     stds    = np.std(ll,axis=0)
     file = root+"\\"+name + ".txt"
     f = open( file,"w")
     f.write(r"\begin{table}"+"\n")
     f.write(r"\begin{tabular}{cccc}"+"\n")
-    f.write("Model        &  mean LL & std LL & Viterbi error")
-    f.write(r"HMM         &"+str(round(means[0],2))+ " & " +str(round(stds[0],2))+ "&" +str(round(error[0],2))+"\n")
-    f.write(r"AR-AsLG-HMM &"+str(round(means[1],2))+ " & " +str(round(stds[1],2))+ "&" +str(round(error[1],2))+"\n")
-    f.write(r"KDE-HMM     &"+str(round(means[2],2))+ " & " +str(round(stds[2],2))+ "&" +str(round(error[2],2))+"\n")
-    f.write(r"KDE-ARHMM   &"+str(round(means[3],2))+ " & " +str(round(stds[3],2))+ "&" +str(round(error[3],2))+"\n")
-    f.write(r"HMM-BNHMM   &"+str(round(means[4],2))+ " & " +str(round(stds[4],2))+ "&" +str(round(error[4],2))+"\n")
-    f.write(r"HMM-AsHMM   &"+str(round(means[5],2))+ " & " +str(round(stds[5],2))+ "&" +str(round(error[5],2))+"\n")
+    f.write("Model        &  mean LL & std LL & Error & Time" +"\n")
+    f.write(r"HMM         &"+str(round(means[0],2))+ " & " +str(round(stds[0],2))+ "&" +str(round(times[0],2))+"\n")
+    f.write(r"AR-AsLG-HMM &"+str(round(means[1],2))+ " & " +str(round(stds[1],2))+ "&" +str(round(times[1],2))+"\n")
+    f.write(r"KDE-HMM     &"+str(round(means[2],2))+ " & " +str(round(stds[2],2))+ "&" +str(round(times[2],2))+"\n")
+    f.write(r"KDE-ARHMM   &"+str(round(means[3],2))+ " & " +str(round(stds[3],2))+ "&" +str(round(times[3],2))+"\n")
+    f.write(r"HMM-BNHMM   &"+str(round(means[4],2))+ " & " +str(round(stds[4],2))+ "&" +str(round(times[4],2))+"\n")
+    f.write(r"HMM-AsHMM   &"+str(round(means[5],2))+ " & " +str(round(stds[5],2))+ "&" +str(round(times[5],2))+"\n")
+    f.write(r"KDE-AsHMM*  &"+str(round(means[6],2))+ " & " +str(round(stds[6],2))+ "&" +str(round(times[6],2))+"\n")
     f.write(r"\end{tabular}" +"\n")
     f.write(r"\caption{Mean likelihood, log likelihood standard deviation and viterbi error for all the compared models}"+"\n" )
     f.write(r"\label{table:synthetic_results}"+"\n" )
@@ -128,7 +130,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [300,300,300]
+nses    = [150,150,150]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -168,29 +170,45 @@ MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ;
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
 lengths_gen  = np.array([len(data_gen)])
 
+times = []
 model1 = KDE_AsHMM(data_gen, 3,P=P)
+tick1 = time.time()
 model1.EM()
+tock1 = time.time()
 
 model2 = KDE_AsHMM(data_gen, 3,P=P)
-# model2.copy(model1)
+tick2 = time.time()
 model2.SEM()
+tock2 = time.time()
+
 
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
-model21.copy(model1)
+tick3 = time.time()
 model21.SEM()
+tock3 = time.time()
 
 model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
-model22.copy(model1)
+tick4 = time.time()
 model22.SEM()
+tock4 = time.time()
 
 model3 = hmm(data_gen,lengths_gen,3,P=P)
+tick5 = time.time()
 model3.EM()
+tock5 = time.time()
 
 model4 = hmm(data_gen, lengths_gen,3,P=P)
+tick6 = time.time()
 model4.SEM()
+tock6 = time.time()
 
 model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+tick7 = time.time()
 model5.EM()
+tock7 = time.time()
+
+times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
+
 #%% Save models
 model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
 model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
@@ -216,8 +234,10 @@ ll22 = []
 ll3  = []
 ll4  = []
 ll5  = []
+error = []
 for t in range(pruebas):
     data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+    errori = np.zeros([pruebas,7])
     ll1.append(model1.log_likelihood(data_gen_test ))
     ll2.append(model2.log_likelihood(data_gen_test ))
     ll21.append(model21.log_likelihood(data_gen_test ))
@@ -226,8 +246,6 @@ for t in range(pruebas):
     ll4.append(model4.log_likelihood(data_gen_test ))
     ll5.append(model5.log_likelihood(data_gen_test ))
     print(str(round(100*(t+1)/(pruebas*1.),3))+"%")
-        
-    
 ll1  = np.array(ll1)
 ll1  = ll1[~np.isnan(ll1)]
 ll2  = np.array(ll2)
@@ -250,6 +268,7 @@ print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
 print("Likelihood HMM:                   "+ str(np.mean(ll3)))
 print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
 print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
+
 
 
 
