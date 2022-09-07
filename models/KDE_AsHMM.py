@@ -589,18 +589,14 @@ class KDE_AsHMM:
         """
         for i in range(self.N):
             for k in range(self.K):
-                # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
-                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
-                # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*self.length
+                pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
                 sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                 while self.p[i][k] +1 <= self.P :
                     p2 = np.copy(self.p)
                     p2[i][k] = p2[i][k] +1
                     [h2,v2,M2] = self.act_params(self.G,self.G,self.p,p2)
                     for j in range(len(self.forback)):
-                        # pena= 0.5*(np.sum(self.G[i][k])+p2[i][k]+self.length)*np.log(self.length)
-                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*np.log(self.length)**2
-                        # pena= 0.5*(np.sum(self.G[i][k])+p2[i][k])*self.length
+                        pena= 0.5*(np.sum(self.G[i][k])+p2[i][k]+self.length)*np.log(self.length)
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,p2,self.G,self.P,self.v,self.h,i,k)-pena
                     if s2 > sm:
                         self.p  = p2
@@ -656,9 +652,7 @@ class KDE_AsHMM:
                 possi = self.pos_ads(self.G[i])
                 son = possi[k][0]
                 if len(possi[k][1])!=0:
-                    # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
-                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*np.log(self.length)**2
-                    # pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k])*self.length
+                    pena= 0.5*(np.sum(self.G[i][k])+self.p[i][k]+self.length)*np.log(self.length)
                     sm = self.forback[0].score_i_k(self.O,self.O,self.M,self.p,self.G,self.P,self.v,self.h,i,k)-pena
                     for j in possi[k][1]:
                         G2 = np.copy(self.G)
@@ -667,9 +661,7 @@ class KDE_AsHMM:
                         for nn in range(self.N):
                             L2.append(self.dag_v(G2[nn])[1])
                         [h2,v2,M2] = self.act_params(self.G,G2,self.p,self.p)
-                        # pena= 0.5*(np.sum(G2[i][k])+self.p[i][k]+self.length)*np.log(self.length)
-                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*np.log(self.length)**2
-                        # pena= 0.5*(np.sum(G2[i][k])+self.p[i][k])*self.length
+                        pena= 0.5*(np.sum(G2[i][k])+self.p[i][k]+self.length)*np.log(self.length)
                         s2 = self.forback[0].score_i_k(self.O,self.O,M2,self.p,G2,self.P,self.v,self.h,i,k)-pena
                         if s2>sm: 
                             sm= s2

@@ -109,7 +109,7 @@ def extract_data(atlas,fold,category,root):
     leng = np.array(leng)
     return train , test, leng
     
-def train_model(data, lengths, n_hidden_states, type_model = "HMM"):
+def train_model(data, lengths, n_hidden_states,P, type_model = "HMM"):
     """
     
 
@@ -131,28 +131,28 @@ def train_model(data, lengths, n_hidden_states, type_model = "HMM"):
 
     """
     if type_model == "HMM":
-        model = hmm(data,lengths,n_hidden_states)
+        model = hmm(data,lengths,n_hidden_states,P=P)
         model.EM()
     if type_model == "AR-AsLG-HMM":
-        model = hmm(data,lengths,n_hidden_states)
+        model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
         model.SEM()
     if type_model == "KDE-HMM":
-        model = kde(data,n_hidden_states)
+        model = kde(data,n_hidden_states,P=P)
         model.EM()
     if type_model == "KDE-AsHMM":
-        model = kde(data,n_hidden_states)
+        model = kde(data,n_hidden_states,P=P)
         model.SEM()
     if type_model == "KDE-AsHMM_no_AR":
-        model = kde(data,n_hidden_states,lags=False)
+        model = kde(data,n_hidden_states,lags=False,P=P)
         model.SEM()
     if type_model == "KDE-AsHMM_no_BN":
-        model = kde(data,n_hidden_states,struc=False)
+        model = kde(data,n_hidden_states,struc=False,P=P)
         model.SEM()
     return model
 
 
 
-def one_fold_model_training_testing(atlas,categories,n_hidden_states, fold, root,type_model = "HMM"):
+def one_fold_model_training_testing(atlas,categories,n_hidden_states, fold, root,type_model = "HMM",P=4):
     """
     
 
@@ -181,7 +181,7 @@ def one_fold_model_training_testing(atlas,categories,n_hidden_states, fold, root
     testin = {}
     for key_id in categories:
         train , test, leng = extract_data(atlas,fold,key_id,root)
-        model_key = train_model(train,leng, n_hidden_states,type_model)
+        model_key = train_model(train,leng, n_hidden_states,P,type_model)
         models[key_id] = model_key
         testin[key_id] = test
         print(key_id)
@@ -192,15 +192,47 @@ def one_fold_model_training_testing(atlas,categories,n_hidden_states, fold, root
         for test_signal in test_id:
             scores = []
             for k in categories:
-                scores.append(models[k].log_likelihood(test_signal))
+                scores.append(models[k].log_likelihood(test_signal,xunit=True))
             prediction = categories[np.argmax(scores)]
             pred_index = np.argwhere(np.array(categories) == prediction).T[0][0]
             count_matrix[i][pred_index] = count_matrix[i][pred_index]+1
-    return count_matrix
+    return [models, count_matrix]
             
+
+def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM", P=4 ):
+    """
     
-        
+
+    Parameters
+    ----------
+    atlas : TYPE
+        DESCRIPTION.
+    categories : TYPE
+        DESCRIPTION.
+    n_hidden_states : TYPE
+        DESCRIPTION.
+    root : TYPE
+        DESCRIPTION.
+    type_model : TYPE, optional
+        DESCRIPTION. The default is "HMM".
+    P : TYPE, optional
+        DESCRIPTION. The default is 4.
+
+    Returns
+    -------
+    confusion : TYPE
+        DESCRIPTION.
+
+    """
     
+    confusion_0   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 0, root,type_model,P=P)
+    confusion_1   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 1, root,type_model,P=P)
+    confusion_2   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 2, root,type_model,P=P)
+    confusion_3   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 3, root,type_model,P=P)
+    confusion_4   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 4, root,type_model,P=P)
+    confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
+    return confusion
+
 
 #%% Crear atlas
 root = r"C:\Users\fox_e\OneDrive\Documentos\datasets\Voice_recognition\audio\audio\16000"
@@ -216,7 +248,11 @@ for i in range(5):
         if int(catalog["fold"][l]) == i+1:
             dic[cate].append(catalog["filename"][l])
     atlas.append(dic)
-#%% crear dataset de entrenamiento y prueba:
-categories = ["dog","cat"]
-confusion_0_hmm   = one_fold_model_training_testing(atlas, categories,3, 0, root,type_model = "HMM")
-confusion_0_ashmm = one_fold_model_training_testing(atlas, categories,3, 0, root,type_model="AR-AsLG-HMM")
+#%% Prueba computo matrices de confusion para cada fold.
+# categories = ["dog","cat"]
+confusion_hmm     = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1)
+
+
+confusion_ashmm   = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1)
+confusion_kde     = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-HMM",P=1)
+
