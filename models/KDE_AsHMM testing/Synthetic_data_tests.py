@@ -14,6 +14,7 @@ path = os.getcwd()
 models = os.path.dirname(path)
 os.chdir(models)
 from KDE_AsHMM import KDE_AsHMM
+from KDE_AsHMM import forBack
 from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 #%% Functions to generate synthetic data
 
@@ -130,7 +131,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [150,150,150]
+nses    = [100,100,100]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -181,7 +182,6 @@ tick2 = time.time()
 model2.SEM()
 tock2 = time.time()
 
-
 model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
 tick3 = time.time()
 model21.SEM()
@@ -203,6 +203,29 @@ model4.SEM()
 tock6 = time.time()
 
 model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+self=model5
+A =self.A
+pi =self.pi
+h = self.h
+v = self.v
+M = self.M
+self.forback = []
+self.forback.append(forBack())
+self.act_probt()      
+likeli = -1e10
+eps = 1
+it = 0
+self.act_gamma()
+self.A = self.act_A()
+self.pi = self.act_pi()
+A = self.A
+pi =self.pi
+self = self.forback[0]
+
+
+
+h, v, M =  self.act_params(self.G,self.G,self.p,self.p)
+
 tick7 = time.time()
 model5.EM()
 tock7 = time.time()
@@ -210,21 +233,21 @@ tock7 = time.time()
 times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
 
 #%% Save models
-model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
-model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
-model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
-model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
-model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
-model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
-model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
+# model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
+# model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
+# model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
+# model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
+# model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
+# model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
+# model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
 #%% Load models
-# model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
-# model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
-# model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
-# model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
-# model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
-# model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
-# model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
+model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
+model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
+model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
+model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
+model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
+model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
+model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
 #%% Testing
 pruebas =100
 ll1  = []

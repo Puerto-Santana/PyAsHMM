@@ -134,7 +134,7 @@ def train_model(data, lengths, n_hidden_states,P, type_model = "HMM"):
         model = hmm(data,lengths,n_hidden_states,P=P)
         model.EM()
     if type_model == "AR-AsLG-HMM":
-        model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
+        model = hmm(data,lengths,n_hidden_states,P=P)
         model.SEM()
     if type_model == "KDE-HMM":
         model = kde(data,n_hidden_states,P=P)
@@ -226,21 +226,57 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
     """
     
     confusion_0   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 0, root,type_model,P=P)
-    confusion_1   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 1, root,type_model,P=P)
-    confusion_2   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 2, root,type_model,P=P)
-    confusion_3   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 3, root,type_model,P=P)
-    confusion_4   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 4, root,type_model,P=P)
-    confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
-    models = [confusion_0[0],confusion_1[0],confusion_2[0],confusion_3[0],confusion_4[0]]
     if root_models is not None:
-        for i in range(5):
-            rooti = root_models +"\\"+type_model+"-fold-"+str(i)
-            try:
-                os.mkdir(rooti)
-            except:
-                pass
-            for j, o in enumerate(categories):
-                models[i][o].save(rooti,name= type_model+"-"+categories[j])
+        rooti = root_models +"\\"+type_model+"-fold-"+str(0)
+        try:
+            os.mkdir(rooti)
+        except:
+            pass
+        for j, o in enumerate(categories):
+            confusion_0[0][o].save(rooti,name= type_model+"-"+categories[j])
+            
+    confusion_1   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 1, root,type_model,P=P)
+    if root_models is not None:
+        rooti = root_models +"\\"+type_model+"-fold-"+str(1)
+        try:
+            os.mkdir(rooti)
+        except:
+            pass
+        for j, o in enumerate(categories):
+            confusion_1[0][o].save(rooti,name= type_model+"-"+categories[j])
+                
+    confusion_2   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 2, root,type_model,P=P)
+    if root_models is not None:
+        rooti = root_models +"\\"+type_model+"-fold-"+str(2)
+        try:
+            os.mkdir(rooti)
+        except:
+            pass
+        for j, o in enumerate(categories):
+            confusion_2[0][o].save(rooti,name= type_model+"-"+categories[j])
+                
+    confusion_3   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 3, root,type_model,P=P)
+    if root_models is not None:
+        rooti = root_models +"\\"+type_model+"-fold-"+str(3)
+        try:
+            os.mkdir(rooti)
+        except:
+            pass
+        for j, o in enumerate(categories):
+            confusion_3[0][o].save(rooti,name= type_model+"-"+categories[j])
+                
+    confusion_4   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 4, root,type_model,P=P)
+    if root_models is not None:
+        rooti = root_models +"\\"+type_model+"-fold-"+str(4)
+        try:
+            os.mkdir(rooti)
+        except:
+            pass
+        for j, o in enumerate(categories):
+            confusion_4[0][o].save(rooti,name= type_model+"-"+categories[j])
+    
+    confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
+
     return confusion
 
 
@@ -263,5 +299,5 @@ root_models = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE
 categories = ["dog","cat","hen"]
 confusion_hmm     = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1,root_models=root_models)
 confusion_ashmm   = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1,root_models=root_models)
-confusion_kde     = aggregated_confusion(atlas, categories,2, root,type_model = "KDE-HMM",P=1,root_models=root_models)
-
+confusion_kde     = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-HMM",P=1,root_models=root_models)
+confusion_askde   = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-AsHMM",P=1,root_models=root_models)

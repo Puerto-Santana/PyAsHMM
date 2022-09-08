@@ -1859,15 +1859,26 @@ class forBack:
                 cut_bar = cut.reshape([T-P,1,len_cm])-cut.reshape([1,T-P,len_cm])
 
                 ubarx = ubar*(diffx.reshape([T-P,T-P,1]))
-                mut = np.dot(cut_bar,Mik.T).reshape([T-P,T-P])
-
-                ubar2 = np.zeros([T-P,T-P,len_nm,len_nm])   
-                for l in range(len_nm):
-                    ubar2[:,:,l] = ubar*(ubar[:,:,l]).reshape([T-P,T-P,1])
+                mut = np.dot(cut_bar,Mik.T).reshape([T-P,T-P])  
                 
-                if p[i][k] != 0 or np.sum(G[i][k]) !=0 :
-                    denm[i][k] = np.sum(np.sum(ubar2*psil.reshape([T-P,T-P,1,1]),axis=0),axis=0)
-                    numm[i][k] = np.sum(np.sum(ubarx*psil.reshape([T-P,T-P,1]),axis=0),axis=0)
+                try:
+                    ubar2 = np.zeros([T-P,T-P,len_nm,len_nm])   
+                    for l in range(len_nm):
+                        ubar2[:,:,l] = ubar*(ubar[:,:,l]).reshape([T-P,T-P,1])
+                    if p[i][k] != 0 or np.sum(G[i][k]) !=0 :
+                        denm[i][k] = np.sum(np.sum(ubar2*psil.reshape([T-P,T-P,1,1]),axis=0),axis=0)
+                        numm[i][k] = np.sum(np.sum(ubarx*psil.reshape([T-P,T-P,1]),axis=0),axis=0)
+                except:
+                    if p[i][k] != 0 or np.sum(G[i][k]) !=0 :
+                        for j in range(T-P):
+                            ubar2j = np.zeros([T-P,len_nm,len_nm])
+                            for l in range(len_nm):
+                                    ubar2j[:,l] += ubar2j[:,l] +ubar[j]*(ubar[j,:,l].reshape([T-P,1]))
+                            denm[i][k] = denm[i][k] + np.sum(psil[:,j].reshape([T-P,1,1])*ubar2j,axis=0) 
+                                
+                    if p[i][k] != 0 or np.sum(G[i][k]) !=0 :
+                        numm[i][k] = np.sum(np.sum(ubarx*psil.reshape([T-P,T-P,1]),axis=0),axis=0)
+
                 numh[i][k] = np.sum((diffx-mut)**2*psil)
         self.denw = np.sum(self.gamma,axis=0)
         self.denh = self.denw
