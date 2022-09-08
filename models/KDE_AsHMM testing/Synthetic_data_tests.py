@@ -203,29 +203,6 @@ model4.SEM()
 tock6 = time.time()
 
 model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
-self=model5
-A =self.A
-pi =self.pi
-h = self.h
-v = self.v
-M = self.M
-self.forback = []
-self.forback.append(forBack())
-self.act_probt()      
-likeli = -1e10
-eps = 1
-it = 0
-self.act_gamma()
-self.A = self.act_A()
-self.pi = self.act_pi()
-A = self.A
-pi =self.pi
-self = self.forback[0]
-
-
-
-h, v, M =  self.act_params(self.G,self.G,self.p,self.p)
-
 tick7 = time.time()
 model5.EM()
 tock7 = time.time()
