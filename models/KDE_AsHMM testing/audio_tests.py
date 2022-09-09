@@ -279,6 +279,8 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
 
     return confusion
 
+def accuracy(conf_matrix):
+    return np.sum(np.diag(conf_matrix))/np.sum(conf_matrix)
 
 #%% Crear atlas
 root = r"C:\Users\fox_e\OneDrive\Documentos\datasets\Voice_recognition\audio\audio\16000"

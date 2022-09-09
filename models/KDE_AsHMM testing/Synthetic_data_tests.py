@@ -167,64 +167,65 @@ MT[2][1][0] = -0.9; MT[2][2][0] = 1.5; MT[2][4][3] = -2
 MT[1][1][7]   =  0.5; MT[1][3][7] = 0.6 
 MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ; MT[2][3][7] = -0.5 ; MT[2][3][8] = -0.3;  MT[2][4][7]= 0.6
 
-#%% Training models
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
 lengths_gen  = np.array([len(data_gen)])
-
+sroot = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\models"
+#%% Model declaration
 times = []
 model1 = KDE_AsHMM(data_gen, 3,P=P)
+model2 = KDE_AsHMM(data_gen, 3,P=P)
+model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
+model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
+model3 = hmm(data_gen,lengths_gen,3,P=P)
+model4 = hmm(data_gen, lengths_gen,3,P=P)
+model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+#%% Model training
 tick1 = time.time()
 model1.EM()
 tock1 = time.time()
 
-model2 = KDE_AsHMM(data_gen, 3,P=P)
 tick2 = time.time()
 model2.SEM()
 tock2 = time.time()
 
-model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
 tick3 = time.time()
 model21.SEM()
 tock3 = time.time()
 
-model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
 tick4 = time.time()
 model22.SEM()
 tock4 = time.time()
 
-model3 = hmm(data_gen,lengths_gen,3,P=P)
 tick5 = time.time()
 model3.EM()
 tock5 = time.time()
 
-model4 = hmm(data_gen, lengths_gen,3,P=P)
 tick6 = time.time()
 model4.SEM()
 tock6 = time.time()
 
-model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
 tick7 = time.time()
 model5.EM()
 tock7 = time.time()
 
 times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
-
+np.savetxt(sroot+"\\"+"tiempos.txt", times)
 #%% Save models
-# model1.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod1")
-# model2.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod2")
-# model21.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod21")
-# model22.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod22")
-# model3.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod3")
-# model4.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod4")
-# model5.save(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models",name="synt_mod5")
+# model1.save(sroot,name="synt_mod1")
+# model2.save(sroot,name="synt_mod2")
+# model21.save(sroot,name="synt_mod21")
+# model22.save(sroot,name="synt_mod22")
+# model3.save(sroot,name="synt_mod3")
+# model4.save(sroot,name="synt_mod4")
+# model5.save(sroot,name="synt_mod5")
 #%% Load models
-model1.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod1.kdehmm")
-model2.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod2.kdehmm")
-model21.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod21.kdehmm")
-model22.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod22.kdehmm")
-model3.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod3.kdehmm")
-model4.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod4.kdehmm")
-model5.load(r"C:\Users\fox_e\Documents\PyAsHMM\models\KDE_AsHMM testing\models\synt_mod5.kdehmm")
+# model1.load(sroot  + "\\" + "synt_mod1.kdehmm")
+# model2.load(sroot  + "\\" + "synt_mod2.kdehmm")
+# model21.load(sroot + "\\" + "synt_mod21.kdehmm")
+# model22.load(sroot + "\\" + "synt_mod22.kdehmm")
+# model3.load(sroot  + "\\" + "synt_mod3.kdehmm")
+# model4.load(sroot  + "\\" + "synt_mod4.kdehmm")
+# model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
 #%% Testing
 pruebas =100
 ll1  = []
