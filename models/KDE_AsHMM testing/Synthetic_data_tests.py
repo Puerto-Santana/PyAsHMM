@@ -20,14 +20,14 @@ from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 
 # Funciones para hacer parsing
 
-def parse_results(ll,error,times,root,name):
+def parse_results(ll, times,root,name):
     means = np.mean(ll,axis=0)
     stds    = np.std(ll,axis=0)
     file = root+"\\"+name + ".txt"
     f = open( file,"w")
     f.write(r"\begin{table}"+"\n")
     f.write(r"\begin{tabular}{cccc}"+"\n")
-    f.write("Model        &  mean LL & std LL & Error & Time" +"\n")
+    f.write("Model        &  mean LL & std LL & Time" +"\n")
     f.write(r"HMM         &"+str(round(means[0],2))+ " & " +str(round(stds[0],2))+ "&" +str(round(times[0],2))+"\n")
     f.write(r"AR-AsLG-HMM &"+str(round(means[1],2))+ " & " +str(round(stds[1],2))+ "&" +str(round(times[1],2))+"\n")
     f.write(r"KDE-HMM     &"+str(round(means[2],2))+ " & " +str(round(stds[2],2))+ "&" +str(round(times[2],2))+"\n")
@@ -131,7 +131,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [100,100,100]
+nses    = [200,200,200]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -209,15 +209,15 @@ model5.EM()
 tock7 = time.time()
 
 times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
-np.savetxt(sroot+"\\"+"tiempos.txt", times)
+np.save(sroot+"\\"+"tiempos", times)
 #%% Save models
-# model1.save(sroot,name="synt_mod1")
-# model2.save(sroot,name="synt_mod2")
-# model21.save(sroot,name="synt_mod21")
-# model22.save(sroot,name="synt_mod22")
-# model3.save(sroot,name="synt_mod3")
-# model4.save(sroot,name="synt_mod4")
-# model5.save(sroot,name="synt_mod5")
+model1.save(sroot,name="synt_mod1")
+model2.save(sroot,name="synt_mod2")
+model21.save(sroot,name="synt_mod21")
+model22.save(sroot,name="synt_mod22")
+model3.save(sroot,name="synt_mod3")
+model4.save(sroot,name="synt_mod4")
+model5.save(sroot,name="synt_mod5")
 #%% Load models
 # model1.load(sroot  + "\\" + "synt_mod1.kdehmm")
 # model2.load(sroot  + "\\" + "synt_mod2.kdehmm")
@@ -226,8 +226,9 @@ np.savetxt(sroot+"\\"+"tiempos.txt", times)
 # model3.load(sroot  + "\\" + "synt_mod3.kdehmm")
 # model4.load(sroot  + "\\" + "synt_mod4.kdehmm")
 # model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
+times = np.load(sroot+"\\"+"tiempos.npy")
 #%% Testing
-pruebas =100
+pruebas =10
 ll1  = []
 ll2  = []
 ll21 = []
@@ -269,8 +270,6 @@ print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
 print("Likelihood HMM:                   "+ str(np.mean(ll3)))
 print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
 print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
-
-
-
-
+ll =  np.array([ll1, ll2, ll21, ll22, ll3, ll4, ll5])
+parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table")
 

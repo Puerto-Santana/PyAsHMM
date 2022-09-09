@@ -752,8 +752,11 @@ class KDE_AsHMM:
             Mi = []
             for k in range(self.K):
                 if np.sum(G[i][k]) != 0 or p[i][k]!=0:
-                    Mik = np.linalg.solve(denm[i][k],numm[i][k].T).T
-                    Mi.append(Mik.reshape([1,len(Mik)]))
+                    try:
+                        Mik = np.linalg.solve(denm[i][k],numm[i][k].T).T
+                        Mi.append(Mik.reshape([1,len(Mik)]))
+                    except:
+                        Mi.append(self.M[i][k])
                 else:
                     Mik = self.M[i][k]
                     Mi.append(Mik)
@@ -869,7 +872,7 @@ class KDE_AsHMM:
         print("EM optimization ended, it took: "+str(round(tock-tick,5))+"s or: " + str(round((tock-tick)/60.,5))+" min")
         
         
-    def SEM(self,err1=9e-1,err2=9e-1,its1=3,its2=50,plot=False): 
+    def SEM(self,err1=9e-1,err2=9e-1,its1=1,its2=50,plot=False): 
         """
         Computes the SEM algorithm
         
