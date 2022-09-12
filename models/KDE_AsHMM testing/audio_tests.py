@@ -79,30 +79,34 @@ def extract_data(atlas,fold,category,root):
         DESCRIPTION.
 
     """
+    n_mf = 5
     test = []   
     files = atlas[fold][category]
     for f in files:
         samplerate, sig = wavfile.read(root+"\\"+f)
         # playsound(root+"\\"+f)
         sig = sig.astype(float)
-        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T)
+        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640  ).T)
+        model  = kde(mfcc_feat,3)
+        model.plot_all_pairs_scatter(name = f)
+        print(len(mfcc_feat))
         if np.sum(mfcc_feat) != 0:
             # test = np.concatenate([test,mfcc_feat],axis=0)
             test.append(mfcc_feat)
     
     leng = []
-    train = np.zeros([0,13])  
+    train = np.zeros([0,n_mf])  
     for i in range(5):
         if i != fold:
-            traini = np.zeros([0,13])    
+            traini = np.zeros([0,n_mf])    
             files = atlas[i][category]
             for f in files:
                 samplerate, sig = wavfile.read(root+"\\"+f)
                 sig = sig.astype(float)
-                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = 13).T)
+                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640).T)
                 if np.sum(mfcc_feat) != 0:
                     traini = np.concatenate([traini,mfcc_feat],axis=0)
-                traini = traini+np.random.normal(0,0.1,[len(traini),13])
+                traini = traini+np.random.normal(0,0.1,[len(traini),n_mf])
             train = np.concatenate([train,traini],axis=0)
             leng.append(len(traini))
     train = np.array(train)
@@ -234,7 +238,8 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
             pass
         for j, o in enumerate(categories):
             confusion_0[0][o].save(rooti,name= type_model+"-"+categories[j])
-            
+    print("Fold 0 completed")
+    
     confusion_1   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 1, root,type_model,P=P)
     if root_models is not None:
         rooti = root_models +"\\"+type_model+"-fold-"+str(1)
@@ -244,7 +249,8 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
             pass
         for j, o in enumerate(categories):
             confusion_1[0][o].save(rooti,name= type_model+"-"+categories[j])
-                
+    print("Fold 1 completed")
+    
     confusion_2   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 2, root,type_model,P=P)
     if root_models is not None:
         rooti = root_models +"\\"+type_model+"-fold-"+str(2)
@@ -254,7 +260,8 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
             pass
         for j, o in enumerate(categories):
             confusion_2[0][o].save(rooti,name= type_model+"-"+categories[j])
-                
+    print("Fold 2 completed")
+    
     confusion_3   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 3, root,type_model,P=P)
     if root_models is not None:
         rooti = root_models +"\\"+type_model+"-fold-"+str(3)
@@ -264,7 +271,8 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
             pass
         for j, o in enumerate(categories):
             confusion_3[0][o].save(rooti,name= type_model+"-"+categories[j])
-                
+    print("Fold 3 completed")
+    
     confusion_4   = one_fold_model_training_testing(atlas, categories,n_hidden_states, 4, root,type_model,P=P)
     if root_models is not None:
         rooti = root_models +"\\"+type_model+"-fold-"+str(4)
@@ -274,6 +282,7 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root,type_model="HMM
             pass
         for j, o in enumerate(categories):
             confusion_4[0][o].save(rooti,name= type_model+"-"+categories[j])
+    print("Fold 4 completed")
     
     confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
 
@@ -299,7 +308,15 @@ for i in range(5):
 #%% Prueba computo matrices de confusion para cada fold.
 root_models = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
 categories = ["dog","cat","hen"]
-confusion_hmm     = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1,root_models=root_models)
-confusion_ashmm   = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1,root_models=root_models)
-confusion_kde     = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-HMM",P=1,root_models=root_models)
-confusion_askde   = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-AsHMM",P=1,root_models=root_models)
+con_hmm       = aggregated_confusion(atlas, categories,3, root,type_model = "HMM",P=1,root_models=root_models)
+con_ashmm     = aggregated_confusion(atlas, categories,3, root,type_model = "AR-AsLG-HMM",P=1,root_models=root_models)
+con_kde       = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-HMM",P=1,root_models=root_models)
+con_askde     = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-AsHMM",P=1,root_models=root_models)
+con_askde_nbn = aggregated_confusion(atlas, categories,3, root,type_model = "KDE-AsHMM_no_BN",P=1,root_models=root_models)
+
+accuracy(con_hmm)
+accuracy(con_ashmm)
+accuracy(con_kde)
+accuracy(con_askde)
+accuracy(con_askde_nbn)
+

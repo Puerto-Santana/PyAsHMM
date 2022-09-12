@@ -1304,7 +1304,7 @@ class KDE_AsHMM:
             n_rows = 1
         else:
             n_cols = 6
-            n_rows = np.ceil(n_plots/6)
+            n_rows = int(np.ceil(n_plots/6))
         plt.figure("Scatter plots "+name)
         plt.clf()
         for i in range(self.N):
