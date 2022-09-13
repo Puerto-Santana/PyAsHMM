@@ -133,7 +133,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [300,300,300]
+nses    = [50,50,50]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -230,49 +230,117 @@ np.save(sroot+"\\"+"tiempos_long", times)
 # model4.load(sroot  + "\\" + "synt_mod4.kdehmm")
 # model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
 # times = np.load(sroot+"\\"+"tiempos.npy")
-#%% Testing
-pruebas =50
-ll1  = []
-ll2  = []
-ll21 = []
-ll22 = []
-ll3  = []
-ll4  = []
-ll5  = []
-error = []
-for t in range(pruebas):
-    data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
-    errori = np.zeros([pruebas,7])
-    ll1.append(model1.log_likelihood(data_gen_test ))
-    ll2.append(model2.log_likelihood(data_gen_test ))
-    ll21.append(model21.log_likelihood(data_gen_test ))
-    ll22.append(model22.log_likelihood(data_gen_test ))
-    ll3.append(model3.log_likelihood(data_gen_test ))
-    ll4.append(model4.log_likelihood(data_gen_test ))
-    ll5.append(model5.log_likelihood(data_gen_test ))
-    print(str(round(100*(t+1)/(pruebas*1.),3))+"%")
-ll1  = np.array(ll1)
-ll1  = ll1[~np.isnan(ll1)]
-ll2  = np.array(ll2)
-ll2  = ll2[~np.isnan(ll2)]
-ll21 = np.array(ll21)
-ll21 = ll21[~np.isnan(ll21)]
-ll22 = np.array(ll22)
-ll22 = ll22[~np.isnan(ll22)]
-ll3  = np.array(ll3)
-ll3  = ll3[~np.isnan(ll3)]
-ll4  = np.array(ll4)
-ll4  = ll4[~np.isnan(ll4)]
-ll5  = np.array(ll5)
-ll5  = ll5[~np.isnan(ll5)]
+#%% Generating several models
+test_nlen = [200,250,300]
+train = True
+n_pruebas =100
+for j in test_nlen:
+    try:
+        os.mkdir(sroot+"\\"+"models_len"+str(j))
+    except:
+        pass
+    srootj = sroot+"\\"+"models_len"+str(j)
+    nses = (np.ones(3)*j).astype(int)
+    data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+    lengths_gen  = np.array([len(data_gen)])
+    times = []
+    model1 = KDE_AsHMM(data_gen, 3,P=P)
+    model2 = KDE_AsHMM(data_gen, 3,P=P)
+    model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
+    model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
+    model3 = hmm(data_gen,lengths_gen,3,P=P)
+    model4 = hmm(data_gen, lengths_gen,3,P=P)
+    model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+    if train == True:
+        tick1 = time.time()
+        model1.EM()
+        tock1 = time.time()
+        
+        tick2 = time.time()
+        model2.SEM()
+        tock2 = time.time()
+        
+        tick3 = time.time()
+        model21.SEM()
+        tock3 = time.time()
+        
+        tick4 = time.time()
+        model22.SEM()
+        tock4 = time.time()
+        
+        tick5 = time.time()
+        model3.EM()
+        tock5 = time.time()
+        
+        tick6 = time.time()
+        model4.SEM()
+        tock6 = time.time()
+        
+        tick7 = time.time()
+        model5.EM()
+        tock7 = time.time()
+        
+        model1.save(srootj,name="synt_mod1_"+str(j))
+        model2.save(srootj,name="synt_mod2_"+str(j))
+        model21.save(srootj,name="synt_mod21_"+str(j))
+        model22.save(srootj,name="synt_mod22_"+str(j))
+        model3.save(srootj,name="synt_mod3_"+str(j))
+        model4.save(srootj,name="synt_mod4_"+str(j))
+        model5.save(srootj,name="synt_mod5_"+str(j))
+        times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
+        np.save(srootj+"\\"+"tiempos_long", times)
+    else:
+        model1.load(srootj  + "\\" + "synt_mod1.kdehmm")
+        model2.load(srootj  + "\\" + "synt_mod2.kdehmm")
+        model21.load(srootj + "\\" + "synt_mod21.kdehmm")
+        model22.load(srootj + "\\" + "synt_mod22.kdehmm")
+        model3.load(srootj  + "\\" + "synt_mod3.kdehmm")
+        model4.load(srootj  + "\\" + "synt_mod4.kdehmm")
+        model5.load(srootj  + "\\" + "synt_mod5.kdehmm")
+        times = np.load(srootj+"\\"+"tiempos.npy")
 
-print("Likelihood KDE-HMM:               "+ str(np.mean(ll1)))
-print("Likelihood KDE-AsHMM:             "+ str(np.mean(ll2)))
-print("Likelihood KDE-AsHMM no BN opt:   "+ str(np.mean(ll21)))
-print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
-print("Likelihood HMM:                   "+ str(np.mean(ll3)))
-print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
-print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
-ll =  np.array([ll1, ll2, ll21, ll22, ll3, ll4, ll5])
-parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_long")
+    pruebas = n_pruebas
+    ll1  = []
+    ll2  = []
+    ll21 = []
+    ll22 = []
+    ll3  = []
+    ll4  = []
+    ll5  = []
+    error = []
+    for t in range(pruebas):
+        data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+        errori = np.zeros([pruebas,7])
+        ll1.append(model1.log_likelihood(data_gen_test ))
+        ll2.append(model2.log_likelihood(data_gen_test ))
+        ll21.append(model21.log_likelihood(data_gen_test ))
+        ll22.append(model22.log_likelihood(data_gen_test ))
+        ll3.append(model3.log_likelihood(data_gen_test ))
+        ll4.append(model4.log_likelihood(data_gen_test ))
+        ll5.append(model5.log_likelihood(data_gen_test ))
+        print(str(round(100*(t+1)/(pruebas*1.),3))+"%")
+    ll1  = np.array(ll1)
+    ll1  = ll1[~np.isnan(ll1)]
+    ll2  = np.array(ll2)
+    ll2  = ll2[~np.isnan(ll2)]
+    ll21 = np.array(ll21)
+    ll21 = ll21[~np.isnan(ll21)]
+    ll22 = np.array(ll22)
+    ll22 = ll22[~np.isnan(ll22)]
+    ll3  = np.array(ll3)
+    ll3  = ll3[~np.isnan(ll3)]
+    ll4  = np.array(ll4)
+    ll4  = ll4[~np.isnan(ll4)]
+    ll5  = np.array(ll5)
+    ll5  = ll5[~np.isnan(ll5)]
+    
+    print("Likelihood KDE-HMM:               "+ str(np.mean(ll1)))
+    print("Likelihood KDE-AsHMM:             "+ str(np.mean(ll2)))
+    print("Likelihood KDE-AsHMM no BN opt:   "+ str(np.mean(ll21)))
+    print("Likelihood KDE-AsHMM no AR opt:   "+ str(np.mean(ll22)))
+    print("Likelihood HMM:                   "+ str(np.mean(ll3)))
+    print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
+    print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
+    ll =  np.array([ll1, ll2, ll21, ll22, ll3, ll4, ll5])
+    parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_"+str(j))
 
