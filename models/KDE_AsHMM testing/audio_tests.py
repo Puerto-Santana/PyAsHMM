@@ -114,7 +114,7 @@ def extract_data(atlas,fold,category,root):
     leng = np.array(leng)
     return train , test, leng
     
-def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,train=True):
+def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,train=True,force=False):
     """
     Trains or loads model depending on the type_model, key and fold
 
@@ -142,59 +142,110 @@ def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,trai
         pass
     if type_model == "HMM":
         model = hmm(data,lengths,n_hidden_states,P=P)
-        if train==True:
+        if force==False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".ashmm")
+            except:    
+                if train==True:
+                    model.EM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".ashmm")
+        else:
             model.EM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".ashmm")
+            
             
     if type_model == "AR-AsLG-HMM":
         model = hmm(data,lengths,n_hidden_states,P=P)
-        if train==True:
+        if force== False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".ashmm")
+            except:
+                if train==True:
+                    try:
+                        model.SEM()
+                    except:
+                        model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
+                        model.SEM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".ashmm")
+        else:
             try:
                 model.SEM()
             except:
                 model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
                 model.SEM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".ashmm")
+            
             
     if type_model == "KDE-HMM":
         model = kde(data,n_hidden_states,P=P)
-        if train==True:
+        if force== False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            except:
+                if train==True:
+                    model.EM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+        else:
             model.EM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            
             
     if type_model == "KDE-AsHMM":
         model = kde(data,n_hidden_states,P=P)
-        if train==True:
+        if force== False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            except:
+                if train==True:
+                    model.SEM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+        else:
             model.SEM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".kdehmm")
-            
+                
     if type_model == "KDE-BNHMM":
         model = kde(data,n_hidden_states,lags=False,P=P)
-        if train==True:
+        if force== False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            except:
+                if train==True:
+                    model.SEM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+        else:
             model.SEM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            
             
     if type_model == "KDE-ARHMM":
         model = kde(data,n_hidden_states,struc=False,P=P)
-        if train==True:
+        if force==False:
+            try:
+                model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            except:        
+                if train==True:
+                    model.SEM()
+                    model.save(root,name=type_model+"-"+key)
+                else:
+                    model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+        else:
             model.SEM()
             model.save(root,name=type_model+"-"+key)
-        else:
-            model.load(root+"\\"+type_model+"-"+key+".kdehmm")
+            
     return model
 
 
-def one_fold_model_training(atlas,categories,n_hidden_states, fold, root,sroot,type_model = "HMM",P=4):
+def one_fold_model_training(atlas,categories,n_hidden_states, fold, root,sroot,type_model = "HMM",P=4,force= False):
     """
     
 
@@ -221,12 +272,14 @@ def one_fold_model_training(atlas,categories,n_hidden_states, fold, root,sroot,t
     """
     models =  {}
     testin = {}
+    it =0
     for key_id in categories:
         train , test, leng = extract_data(atlas,fold,key_id,root)
-        model_key = train_model(train,leng, n_hidden_states,P,type_model,sroot,fold,key_id)
+        model_key = train_model(train,leng, n_hidden_states,P,type_model,sroot,fold,key_id,force)
         models[key_id] = model_key
         testin[key_id] = test
-        print(key_id)
+        print(str(it)+key_id)
+        it=it+1
 
 def one_fold_model_loading_testing(atlas,categories,n_hidden_states, fold, root,sroot,type_model,P=4):
     """
@@ -260,10 +313,11 @@ def one_fold_model_loading_testing(atlas,categories,n_hidden_states, fold, root,
         model_key = train_model(train,leng, n_hidden_states,P,type_model,sroot,fold,key_id,train=False)
         models[key_id] = model_key
         testin[key_id] = test
-        print(key_id)
+    
     
     count_matrix = np.zeros( [len(categories),len(categories)])
     for i, key_id in enumerate(categories):
+        print("Test : "+key_id+" ("+str(i)+")")
         test_id = testin[key_id]
         for test_signal in test_id:
             scores = []
@@ -313,7 +367,7 @@ def all_fold_training(atlas,categories,n_hidden_states,root,sroot,type_model="HM
     print("Fold 4 completed")
             
 
-def aggregated_confusion(atlas,categories, n_hidden_states, root, sroot,type_model="HMM", P=4 ):
+def aggregated_confusion(atlas,categories, n_hidden_states, root, sroot,type_model, P=4 ):
     """
     
 
@@ -341,18 +395,23 @@ def aggregated_confusion(atlas,categories, n_hidden_states, root, sroot,type_mod
     
     confusion_0   = one_fold_model_loading_testing(atlas, categories,n_hidden_states, 0, root, sroot, type_model,P=P)
     print("Fold 0 completed")
+    np.save(sroot+"\\"+type_model+"validation_0", confusion_0)
     
     confusion_1   = one_fold_model_loading_testing(atlas, categories,n_hidden_states, 1, root, sroot, type_model,P=P)
     print("Fold 1 completed")
+    np.save(sroot+"\\"+type_model+"validation_1", confusion_1)
     
     confusion_2   = one_fold_model_loading_testing(atlas, categories,n_hidden_states, 2, root, sroot, type_model,P=P)
     print("Fold 2 completed")
+    np.save(sroot+"\\"+type_model+"validation_2", confusion_2)
     
     confusion_3   = one_fold_model_loading_testing(atlas, categories,n_hidden_states, 3, root, sroot, type_model,P=P)
     print("Fold 3 completed")
+    np.save(sroot+"\\"+type_model+"validation_3", confusion_3)
     
     confusion_4   = one_fold_model_loading_testing(atlas, categories,n_hidden_states, 4, root, sroot, type_model,P=P)
     print("Fold 4 completed")
+    np.save(sroot+"\\"+type_model+"validation_4", confusion_4)
     
     confusion = confusion_0[1]+confusion_1[1]+confusion_2[1]+confusion_3[1]+confusion_4[1]
 
@@ -437,6 +496,40 @@ for i in range(5):
         if int(catalog["fold"][l]) == i+1:
             dic[cate].append(catalog["filename"][l])
     atlas.append(dic)
-#%% Aprendiendo HMM para todas las etiquetas
 sroot = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
-all_fold_training(atlas, categories, 3, root, sroot,type_model="KDE-HMM",P=1)
+#%% Aprendiendo HMM para todas las etiquetas
+force = False
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-AsHMM",P=1,force=force)
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-HMM",P=1,force=force)
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"HMM",P=1,force=force)
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"AR-AsLG-HMM",P=1,force=force)
+
+#%% Cross-validation
+aggregated_confusion(atlas, categories, 3, root, sroot,"HMM")
+aggregated_confusion(atlas, categories, 3, root, sroot,"AR-AsLG-HMM")
+aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-HMM")
+aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-AsHMM")
+#%%
+loc = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
+modelo = "AR-AsLG-HMM"
+# modelo = "HMM"
+# modelo = "KDE-HMM"
+# modelo = "KDE-AsHMM"
+matrices = []
+presiciones = []
+matrix_sum = np.zeros([50,50])
+for i in range(5):
+   file = loc+ "\\" + modelo+"validation_"+str(i)+".npy"
+   mati = np.load(file, allow_pickle=True)[-1]
+   matrices.append(mati)
+   presiciones.append(accuracy(mati))
+   matrix_sum += mati
+pres = accuracy(matrix_sum)
+print("Presicion de "+modelo +"\n"+ str(presiciones) +"\n" +"Presicion acumulada: " +str(pres))
+print("Preision media: " +str(np.mean(presiciones)) )
+
+

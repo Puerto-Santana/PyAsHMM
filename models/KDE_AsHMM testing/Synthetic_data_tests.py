@@ -133,7 +133,7 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
 #%% Generating data
 K       = 7
 N       = 3
-nses    = [50,50,50]
+nses    = [350,350,350]
 seqss   = [0,1,2,1,0,2,0]
 
 G = np.zeros([3,7,7])
@@ -231,7 +231,7 @@ np.save(sroot+"\\"+"tiempos_long", times)
 # model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
 # times = np.load(sroot+"\\"+"tiempos.npy")
 #%% Generating several models
-test_nlen = [200,250,300]
+test_nlen = [350]
 train = True
 n_pruebas =100
 for j in test_nlen:
@@ -264,6 +264,7 @@ for j in test_nlen:
         model21.SEM()
         tock3 = time.time()
         
+
         tick4 = time.time()
         model22.SEM()
         tock4 = time.time()
@@ -272,9 +273,15 @@ for j in test_nlen:
         model3.EM()
         tock5 = time.time()
         
-        tick6 = time.time()
-        model4.SEM()
-        tock6 = time.time()
+        try:
+            tick6 = time.time()
+            model4.SEM()
+            tock6 = time.time()
+        except:
+            model4 = hmm(data_gen, lengths_gen,3,P=P,struc=False)
+            tick6 = time.time()
+            model4.SEM()
+            tock6 = time.time()
         
         tick7 = time.time()
         model5.EM()
