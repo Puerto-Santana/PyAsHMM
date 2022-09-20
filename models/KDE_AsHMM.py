@@ -1278,7 +1278,7 @@ class KDE_AsHMM:
         if root is not None:
             plt.savefig(root, dpi=600)
         
-    def plot_all_pairs_scatter(self,samples=500,root =None,name =""):
+    def plot_all_pairs_scatter(self,samples=500,root =None,name ="",indexes = None):
         """
         Plot scatter plots from the learned parameters for all pairs of variables
 
@@ -1298,7 +1298,9 @@ class KDE_AsHMM:
         """
         if type(samples) is not int:
             raise Exception("Leng must be a positive integer")
-        n_plots = self.K*(self.K-1)
+        if indexes == None:
+            indexes = range(self.K)
+        n_plots = len(indexes)*(len(indexes)-1)
         if n_plots<6:
             n_cols = n_plots
             n_rows = 1
@@ -1310,8 +1312,8 @@ class KDE_AsHMM:
         for i in range(self.N):
             data = self.sample_state(samples,i)
             count = 1
-            for gg in range(self.K):
-                for ff in range(gg+1,self.K):
+            for l, gg in enumerate(indexes):
+                for ff in indexes[l+1:]:
                     plt.subplot(n_rows,n_cols,count)
                     plt.scatter(data[:,gg],data[:,ff],label ="state: " +str(i))
                     plt.xlabel("$X^t_"+str(gg)+"$")

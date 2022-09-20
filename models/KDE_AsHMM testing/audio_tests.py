@@ -88,7 +88,7 @@ def extract_data(atlas,fold,category,root):
         # playsound(root+"\\"+f)
         sig = sig.astype(float)
         # mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640  ).T)
-        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1600, hop_length= 800  ).T)
+        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =800, hop_length= 400  ).T)
         mfcc_feat = mfcc_feat+np.random.normal(0,0.1,[len(mfcc_feat),n_mf])
         if np.sum(mfcc_feat) != 0:
             # test = np.concatenate([test,mfcc_feat],axis=0)
@@ -101,17 +101,22 @@ def extract_data(atlas,fold,category,root):
             traini = np.zeros([0,n_mf])    
             files = atlas[i][category]
             for f in files:
-                samplerate, sig = wavfile.read(root+"\\"+f)
+                
+                samplerate, sig = wavfile.read(root+"\\"+f)  
+                # samplerate, sig = wavfile.read(root+"\\"+files[0])
                 sig = sig.astype(float)
                 # mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640).T)
-                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1600, hop_length= 800  ).T)
+                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =800, hop_length= 400  ).T)
                 if np.sum(mfcc_feat) != 0:
                     traini = np.concatenate([traini,mfcc_feat],axis=0)
                 traini = traini+np.random.normal(0,0.1,[len(traini),n_mf])
+                
+                
             train = np.concatenate([train,traini],axis=0)
             leng.append(len(traini))
     train = np.array(train)
     leng = np.array(leng)
+
     return train , test, leng
     
 def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,train=True,force=False):
@@ -166,7 +171,7 @@ def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,trai
                     try:
                         model.SEM()
                     except:
-                        model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
+                        model = hmm(data,lengths,n_hidden_states,P=P,struc=False,lags=False)
                         model.SEM()
                     model.save(root,name=type_model+"-"+key)
                 else:
@@ -175,8 +180,8 @@ def train_model(data, lengths, n_hidden_states,P, type_model,sroot,fold,key,trai
             try:
                 model.SEM()
             except:
-                model = hmm(data,lengths,n_hidden_states,P=P,struc=False)
-                model.SEM()
+                model = hmm(data,lengths,n_hidden_states,P=P,struc=False,lags=False)
+                model.EM()
             model.save(root,name=type_model+"-"+key)
             
             
@@ -275,7 +280,7 @@ def one_fold_model_training(atlas,categories,n_hidden_states, fold, root,sroot,t
     it =0
     for key_id in categories:
         train , test, leng = extract_data(atlas,fold,key_id,root)
-        model_key = train_model(train,leng, n_hidden_states,P,type_model,sroot,fold,key_id,force)
+        model_key = train_model(train,leng, n_hidden_states,P,type_model,sroot,fold,key_id,force=force)
         models[key_id] = model_key
         testin[key_id] = test
         print(str(it)+key_id)
@@ -498,24 +503,28 @@ for i in range(5):
     atlas.append(dic)
 sroot = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
 #%% Aprendiendo HMM para todas las etiquetas
-force = False
-for i in range(5):
-    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-AsHMM",P=1,force=force)
-for i in range(5):
-    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-HMM",P=1,force=force)
+force = True
 for i in range(5):
     one_fold_model_training(atlas,categories,3, i, root,sroot,"HMM",P=1,force=force)
+    
 for i in range(5):
     one_fold_model_training(atlas,categories,3, i, root,sroot,"AR-AsLG-HMM",P=1,force=force)
+
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-AsHMM",P=1,force=force)
+    
+for i in range(5):
+    one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-HMM",P=1,force=force)
+    
 
 #%% Cross-validation
 aggregated_confusion(atlas, categories, 3, root, sroot,"HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"AR-AsLG-HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-AsHMM")
-#%%
+#%% Resultados
 loc = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
-modelo = "AR-AsLG-HMM"
+modelo = "HMM"
 # modelo = "HMM"
 # modelo = "KDE-HMM"
 # modelo = "KDE-AsHMM"

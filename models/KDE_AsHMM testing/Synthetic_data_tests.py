@@ -20,10 +20,11 @@ from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 
 # Funciones para hacer parsing
 
-def parse_results(ll, times,root,name):
+def parse_results(ll, times,root,name,leng):
     means = np.mean(ll,axis=1)
     stds    = np.std(ll,axis=1)
     file = root+"\\"+name + ".txt"
+    file2 = root+"\\"+name+"_xunit" + ".txt"
     f = open( file,"w")
     f.write(r"\begin{table}"+"\n")
     f.write(r"\centering"+"\n")
@@ -42,6 +43,29 @@ def parse_results(ll, times,root,name):
     f.write(r"\label{table:synthetic_results}"+"\n" )
     f.write(r"\end{table}")
     f.close()
+    
+    means1   = np.mean(ll/leng,axis=1)
+    stds1    = np.std(ll/leng,axis=1)
+    f = open( file2,"w")
+    f.write(r"\begin{table}"+"\n")
+    f.write(r"\centering"+"\n")
+    f.write(r"\begin{tabular}{lrrr}"+"\n")
+    f.write("Model        &  mean LL & std LL & Time(s)" + r"\\"+"\n")
+    f.write(r" \hline"+"\n")
+    f.write(r"KDE-HMM     &"+str(round(means1[0],2))+ " & " +str(round(stds1[0],2))+ "&" +str(round(times[0],2))+ r"\\"+" \n")
+    f.write(r"KDE-AsHMM   &"+str(round(means1[1],2))+ " & " +str(round(stds1[1],2))+ "&" +str(round(times[1],2))+ r"\\"+"\n")
+    f.write(r"KDE-ARHMM   &"+str(round(means1[2],2))+ " & " +str(round(stds1[2],2))+ "&" +str(round(times[2],2))+ r"\\"+"\n")
+    f.write(r"KDE-BNHMM   &"+str(round(means1[3],2))+ " & " +str(round(stds1[3],2))+ "&" +str(round(times[3],2))+ r"\\"+"\n")
+    f.write(r"HMM         &"+str(round(means1[4],2))+ " & " +str(round(stds1[4],2))+ "&" +str(round(times[4],2))+ r"\\"+"\n")
+    f.write(r"AR-AsLG-HMM &"+str(round(means1[5],2))+ " & " +str(round(stds1[5],2))+ "&" +str(round(times[5],2))+ r"\\"+"\n")
+    f.write(r"KDE-AsHMM*  &"+str(round(means1[6],2))+ " & " +str(round(stds1[6],2))+ "&" +str(round(times[6],2))+ r"\\"+"\n")
+    f.write(r"\end{tabular}" +"\n")
+    f.write(r"\caption{Mean likelihood, log likelihood standard deviation and viterbi error for all the compared models}"+"\n" )
+    f.write(r"\label{table:synthetic_results}"+"\n" )
+    f.write(r"\end{table}")
+    f.close()
+    
+    return [means,stds,means1,stds1]
 
 
 
@@ -231,9 +255,13 @@ np.save(sroot+"\\"+"tiempos_long", times)
 # model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
 # times = np.load(sroot+"\\"+"tiempos.npy")
 #%% Generating several models
-test_nlen = [350]
-train = True
-n_pruebas =100
+test_nlen = [50,100,150,200,250,300]
+train = False
+n_pruebas =200
+means  = []
+stds = []
+meansx = []
+stdsx = []
 for j in test_nlen:
     try:
         os.mkdir(sroot+"\\"+"models_len"+str(j))
@@ -297,14 +325,14 @@ for j in test_nlen:
         times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
         np.save(srootj+"\\"+"tiempos_long", times)
     else:
-        model1.load(srootj  + "\\" + "synt_mod1.kdehmm")
-        model2.load(srootj  + "\\" + "synt_mod2.kdehmm")
-        model21.load(srootj + "\\" + "synt_mod21.kdehmm")
-        model22.load(srootj + "\\" + "synt_mod22.kdehmm")
-        model3.load(srootj  + "\\" + "synt_mod3.kdehmm")
-        model4.load(srootj  + "\\" + "synt_mod4.kdehmm")
-        model5.load(srootj  + "\\" + "synt_mod5.kdehmm")
-        times = np.load(srootj+"\\"+"tiempos.npy")
+        model1.load(srootj  + "\\" + "synt_mod1_"+str(j)+".kdehmm")
+        model2.load(srootj  + "\\" + "synt_mod2_"+str(j)+".kdehmm")
+        model21.load(srootj + "\\" + "synt_mod21_"+str(j)+".kdehmm")
+        model22.load(srootj + "\\" + "synt_mod22_"+str(j)+".kdehmm")
+        model3.load(srootj  + "\\" + "synt_mod3_"+str(j)+".kdehmm")
+        model4.load(srootj  + "\\" + "synt_mod4_"+str(j)+".kdehmm")
+        model5.load(srootj  + "\\" + "synt_mod5_"+str(j)+".kdehmm")
+        times = np.load(srootj+"\\"+"tiempos_long.npy")
 
     pruebas = n_pruebas
     ll1  = []
@@ -318,7 +346,7 @@ for j in test_nlen:
     for t in range(pruebas):
         data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
         errori = np.zeros([pruebas,7])
-        ll1.append(model1.log_likelihood(data_gen_test ))
+        ll1.append(model1.log_likelihood(data_gen_test))
         ll2.append(model2.log_likelihood(data_gen_test ))
         ll21.append(model21.log_likelihood(data_gen_test ))
         ll22.append(model22.log_likelihood(data_gen_test ))
@@ -349,5 +377,64 @@ for j in test_nlen:
     print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
     print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
     ll =  np.array([ll1, ll2, ll21, ll22, ll3, ll4, ll5])
-    parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_"+str(j))
+    rr = parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_"+str(j),len(data_gen))
+    means.append(rr[0])
+    stds.append(rr[1])
+    meansx.append(rr[2])
+    stdsx.append(rr[3])
+means = np.array(means)
+stds  = np.array(stds)
+meansx = np.array(meansx)
+stdsx  = np.array(stdsx)
+
+
+plt.figure("Mean likelihood ")
+plt.plot(np.arange(1,7)*350,means[:,0],label = "KDE-HMM",color="red")
+plt.fill_between(np.arange(1,7)*350,means[:,0]+2*stds[:,0],means[:,0]-2*stds[:,0],color="red",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,means[:,1],label = "KDE-AsHMM",color="blue")
+plt.fill_between(np.arange(1,7)*350,means[:,1]+2*stds[:,1],means[:,1]-2*stds[:,1],color="blue",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,means[:,2],label = "KDE-ARHMM",color="green")
+plt.fill_between(np.arange(1,7)*350,means[:,2]+2*stds[:,2],means[:,2]-2*stds[:,2],color="green",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,means[:,3],label = "KDE-BNHMM",color="gray")
+plt.fill_between(np.arange(1,7)*350,means[:,3]+2*stds[:,3],means[:,3]-2*stds[:,3],color="gray",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,means[:,4],label = "HMM",color="black")
+plt.fill_between(np.arange(1,7)*350,means[:,4]+2*stds[:,4],means[:,4]-2*stds[:,4],color="black",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,means[:,5],label = "AR-AsLG-HMM",color="orange")
+plt.fill_between(np.arange(1,7)*350,means[:,5]+2*stds[:,5],means[:,5]-2*stds[:,5],color="orange",alpha=0.5)
+plt.grid("on")
+plt.ylabel("$\mu(LL)$")
+plt.xlabel("$T$")
+plt.legend()
+
+
+plt.figure("Mean likelihood per unit data ")
+plt.plot(np.arange(1,7)*350,meansx[:,0],label = "KDE-HMM",color="red")
+plt.fill_between(np.arange(1,7)*350,meansx[:,0]+2*stdsx[:,0],meansx[:,0]-2*stdsx[:,0],color="red",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,meansx[:,1],label = "KDE-AsHMM",color="blue")
+plt.fill_between(np.arange(1,7)*350,meansx[:,1]+2*stdsx[:,1],meansx[:,1]-2*stdsx[:,1],color="blue",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,meansx[:,2],label = "KDE-ARHMM",color="green")
+plt.fill_between(np.arange(1,7)*350,meansx[:,2]+2*stdsx[:,2],meansx[:,2]-2*stdsx[:,2],color="green",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,meansx[:,3],label = "KDE-BNHMM",color="gray")
+plt.fill_between(np.arange(1,7)*350,meansx[:,3]+2*stdsx[:,3],meansx[:,3]-2*stdsx[:,3],color="gray",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,meansx[:,4],label = "HMM",color="black")
+plt.fill_between(np.arange(1,7)*350,meansx[:,4]+2*stdsx[:,4],meansx[:,4]-2*stdsx[:,4],color="black",alpha=0.5)
+
+plt.plot(np.arange(1,7)*350,meansx[:,5],label = "AR-AsLG-HMM",color="orange")
+plt.fill_between(np.arange(1,7)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="orange",alpha=0.5)
+plt.grid("on")
+plt.ylabel("$\mu(LL/T)$")
+plt.xlabel("$T$")
+plt.legend()
+
+
+#%%
 
