@@ -151,9 +151,28 @@ for i in unworn:
             ll3ij = mod3.log_likelihood(datasets[j],xunit=True)
             ll4ij = mod4.log_likelihood(datasets[j],xunit=True)
             llunworni.append([ll1ij,ll2ij,ll3ij,ll4ij])
-    ll_unworn.append(llworni)
-ll_unworn = np.array(ll_worn)
-np.save(root_unworn+"\\"+"ll_worn",ll_worn)
+    ll_unworn.append(llunworni)
+ll_unworn = np.array(ll_unworn)
+np.save(root_unworn+"\\"+"ll_unworn",ll_unworn)
+
+ll_un2worn = []
+for i in unworn:
+    llworni = []
+    models_unworni = models_unworn[i]
+    actual_i = models_unworni[0]
+    mod1 = models_unworni[1]
+    mod2 = models_unworni[2]
+    mod3 = models_unworni[3]
+    mod4 = models_unworni[4]
+    for j in worn:
+        ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
+        ll2ij = mod2.log_likelihood(datasets[j],xunit=True)
+        ll3ij = mod3.log_likelihood(datasets[j],xunit=True)
+        ll4ij = mod4.log_likelihood(datasets[j],xunit=True)
+        llworni.append([ll1ij,ll2ij,ll3ij,ll4ij])
+    ll_un2worn.append(llworni)
+ll_un2worn = np.array(ll_un2worn)
+np.save(root_unworn+"\\"+"ll_un2worn",ll_un2worn)
         
 
 
