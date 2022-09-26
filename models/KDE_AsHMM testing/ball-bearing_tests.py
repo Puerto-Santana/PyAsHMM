@@ -124,6 +124,14 @@ model3.EM()
 
 model4 = hmm(train1, np.array([len(train1)]), N,P=1)
 model4.SEM()
+#%% Testing
+ll1 =[ model1.log_likelihood(test11),
+      model2.log_likelihood(test11),
+      model21.log_likelihood(test11),
+      model22.log_likelihood(test11),
+      model3.log_likelihood(test11)]
+
+
 
 
 

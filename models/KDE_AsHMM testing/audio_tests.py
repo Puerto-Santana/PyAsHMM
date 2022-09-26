@@ -88,7 +88,7 @@ def extract_data(atlas,fold,category,root):
         # playsound(root+"\\"+f)
         sig = sig.astype(float)
         # mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640  ).T)
-        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =800, hop_length= 400  ).T)
+        mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1600, hop_length= 800  ).T)
         mfcc_feat = mfcc_feat+np.random.normal(0,0.1,[len(mfcc_feat),n_mf])
         if np.sum(mfcc_feat) != 0:
             # test = np.concatenate([test,mfcc_feat],axis=0)
@@ -106,7 +106,7 @@ def extract_data(atlas,fold,category,root):
                 # samplerate, sig = wavfile.read(root+"\\"+files[0])
                 sig = sig.astype(float)
                 # mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1280, hop_length= 640).T)
-                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =800, hop_length= 400  ).T)
+                mfcc_feat = cut_mfcc(mfcc(sig,sr=samplerate,n_mfcc = n_mf,win_length =1600, hop_length= 800  ).T)
                 if np.sum(mfcc_feat) != 0:
                     traini = np.concatenate([traini,mfcc_feat],axis=0)
                 traini = traini+np.random.normal(0,0.1,[len(traini),n_mf])
@@ -517,6 +517,7 @@ for i in range(5):
     one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-HMM",P=1,force=force)
     
 
+
 #%% Cross-validation
 aggregated_confusion(atlas, categories, 3, root, sroot,"HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"AR-AsLG-HMM")
@@ -524,21 +525,33 @@ aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-AsHMM")
 #%% Resultados
 loc = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
-modelo = "HMM"
 # modelo = "HMM"
+# modelo = "AR-AsLG-HMM"
 # modelo = "KDE-HMM"
 # modelo = "KDE-AsHMM"
+modelos  =["HMM","AR-AsLG-HMM","KDE-HMM","KDE-AsHMM"]
 matrices = []
 presiciones = []
-matrix_sum = np.zeros([50,50])
-for i in range(5):
-   file = loc+ "\\" + modelo+"validation_"+str(i)+".npy"
-   mati = np.load(file, allow_pickle=True)[-1]
-   matrices.append(mati)
-   presiciones.append(accuracy(mati))
-   matrix_sum += mati
-pres = accuracy(matrix_sum)
-print("Presicion de "+modelo +"\n"+ str(presiciones) +"\n" +"Presicion acumulada: " +str(pres))
-print("Preision media: " +str(np.mean(presiciones)) )
+matrix_sum = []
+accuracies = []
+for j in modelos:
+    accuri = []
+    matrix_sumi = np.zeros([50,50])
+    matrizi = []
+    for i in range(5):
+       file = loc+ "\\" + j+"validation_"+str(i)+".npy"
+       mati = np.load(file, allow_pickle=True)[-1]
+       matrizi.append(mati)
+       accuri.append(accuracy(mati))
+       matrix_sumi += mati
+    matrix_sum.append(matrix_sumi)
+    matrices.append(matrizi)
+    accuracies.append(accuri)
+    
+
+# pres = accuracy(matrix_sum)
+# print("Presicion de "+modelo +"\n"+ str(presiciones) +"\n" +"Presicion acumulada: " +str(pres))
+# print("Presicion media: " +str(np.mean(presiciones)) )
+
 
 

@@ -8,6 +8,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt 
 import os
+import math
 import warnings
 warnings.filterwarnings("ignore")
 path = os.getcwd()
@@ -17,8 +18,288 @@ from KDE_AsHMM import KDE_AsHMM
 from KDE_AsHMM import forBack
 from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 #%% Functions to generate synthetic data
+def graph_ranks(avranks, names, cd=None, cdmethod=None, lowv=None, highv=None,
+                width=6, textspace=1, reverse=False, filename=None, **kwargs):
+    """
+    Draws a CD graph, which is used to display  the differences in methods'
+    performance. See Janez Demsar, Statistical Comparisons of Classifiers over
+    Multiple Data Sets, 7(Jan):1--30, 2006.
 
+    Needs matplotlib to work.
+
+    The image is ploted on `plt` imported using
+    `import matplotlib.pyplot as plt`.
+
+    Args:
+        avranks (list of float): average ranks of methods.
+        names (list of str): names of methods.
+        cd (float): Critical difference used for statistically significance of
+            difference between methods.
+        cdmethod (int, optional): the method that is compared with other methods
+            If omitted, show pairwise comparison of methods
+        lowv (int, optional): the lowest shown rank
+        highv (int, optional): the highest shown rank
+        width (int, optional): default width in inches (default: 6)
+        textspace (int, optional): space on figure sides (in inches) for the
+            method names (default: 1)
+        reverse (bool, optional):  if set to `True`, the lowest rank is on the
+            right (default: `False`)
+        filename (str, optional): output file name (with extension). If not
+            given, the function does not write a file.
+    """
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+    except ImportError:
+        raise ImportError("Function graph_ranks requires matplotlib.")
+
+    width = float(width)
+    textspace = float(textspace)
+
+    def nth(l, n):
+        """
+        Returns only nth elemnt in a list.
+        """
+        n = lloc(l, n)
+        return [a[n] for a in l]
+
+    def lloc(l, n):
+        """
+        List location in list of list structure.
+        Enable the use of negative locations:
+        -1 is the last element, -2 second last...
+        """
+        if n < 0:
+            return len(l[0]) + n
+        else:
+            return n
+
+    def mxrange(lr):
+        """
+        Multiple xranges. Can be used to traverse matrices.
+        This function is very slow due to unknown number of
+        parameters.
+
+        >>> mxrange([3,5])
+        [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+
+        >>> mxrange([[3,5,1],[9,0,-3]])
+        [(3, 9), (3, 6), (3, 3), (4, 9), (4, 6), (4, 3)]
+
+        """
+        if not len(lr):
+            yield ()
+        else:
+            # it can work with single numbers
+            index = lr[0]
+            if isinstance(index, int):
+                index = [index]
+            for a in range(*index):
+                for b in mxrange(lr[1:]):
+                    yield tuple([a] + list(b))
+
+    def print_figure(fig, *args, **kwargs):
+        canvas = FigureCanvasAgg(fig)
+        canvas.print_figure(*args, **kwargs)
+
+    sums = avranks
+
+    tempsort = sorted([(a, i) for i, a in enumerate(sums)], reverse=reverse)
+    ssums = nth(tempsort, 0)
+    sortidx = nth(tempsort, 1)
+    nnames = [names[x] for x in sortidx]
+
+    if lowv is None:
+        lowv = min(1, int(math.floor(min(ssums))))
+    if highv is None:
+        highv = max(len(avranks), int(math.ceil(max(ssums))))
+
+    cline = 0.4
+
+    k = len(sums)
+
+    lines = None
+
+    linesblank = 0
+    scalewidth = width - 2 * textspace
+
+    def rankpos(rank):
+        if not reverse:
+            a = rank - lowv
+        else:
+            a = highv - rank
+        return textspace + scalewidth / (highv - lowv) * a
+
+    distanceh = 0.25
+
+    if cd and cdmethod is None:
+        # get pairs of non significant methods
+
+        def get_lines(sums, hsd):
+            # get all pairs
+            lsums = len(sums)
+            allpairs = [(i, j) for i, j in mxrange([[lsums], [lsums]]) if j > i]
+            # remove not significant
+            notSig = [(i, j) for i, j in allpairs
+                      if abs(sums[i] - sums[j]) <= hsd]
+            # keep only longest
+
+            def no_longer(ij_tuple, notSig):
+                i, j = ij_tuple
+                for i1, j1 in notSig:
+                    if (i1 <= i and j1 > j) or (i1 < i and j1 >= j):
+                        return False
+                return True
+
+            longest = [(i, j) for i, j in notSig if no_longer((i, j), notSig)]
+
+            return longest
+
+        lines = get_lines(ssums, cd)
+        linesblank = 0.2 + 0.2 + (len(lines) - 1) * 0.1
+
+        # add scale
+        distanceh = 0.25
+        cline += distanceh
+
+    # calculate height needed height of an image
+    minnotsignificant = max(2 * 0.2, linesblank)
+    height = cline + ((k + 1) / 2) * 0.2 + minnotsignificant
+
+    fig = plt.figure(figsize=(width, height))
+    fig.set_facecolor('white')
+    ax = fig.add_axes([0, 0, 1, 1])  # reverse y axis
+    ax.set_axis_off()
+
+    hf = 1. / height  # height factor
+    wf = 1. / width
+
+    def hfl(l):
+        return [a * hf for a in l]
+
+    def wfl(l):
+        return [a * wf for a in l]
+
+
+    # Upper left corner is (0,0).
+    ax.plot([0, 1], [0, 1], c="w")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+
+    def line(l, color='k', **kwargs):
+        """
+        Input is a list of pairs of points.
+        """
+        ax.plot(wfl(nth(l, 0)), hfl(nth(l, 1)), color=color, **kwargs)
+
+    def text(x, y, s, *args, **kwargs):
+        ax.text(wf * x, hf * y, s, *args, **kwargs)
+
+    line([(textspace, cline), (width - textspace, cline)], linewidth=0.7)
+
+    bigtick = 0.1
+    smalltick = 0.05
+
+    tick = None
+    for a in list(np.arange(lowv, highv, 0.5)) + [highv]:
+        tick = smalltick
+        if a == int(a):
+            tick = bigtick
+        line([(rankpos(a), cline - tick / 2),
+              (rankpos(a), cline)],
+             linewidth=0.7)
+
+    for a in range(lowv, highv + 1):
+        text(rankpos(a), cline - tick / 2 - 0.05, str(a),
+             ha="center", va="bottom")
+
+    k = len(ssums)
+
+    for i in range(math.ceil(k / 2)):
+        chei = cline + minnotsignificant + i * 0.2
+        line([(rankpos(ssums[i]), cline),
+              (rankpos(ssums[i]), chei),
+              (textspace - 0.1, chei)],
+             linewidth=0.7)
+        text(textspace - 0.2, chei, nnames[i], ha="right", va="center")
+
+    for i in range(math.ceil(k / 2), k):
+        chei = cline + minnotsignificant + (k - i - 1) * 0.2
+        line([(rankpos(ssums[i]), cline),
+              (rankpos(ssums[i]), chei),
+              (textspace + scalewidth + 0.1, chei)],
+             linewidth=0.7)
+        text(textspace + scalewidth + 0.2, chei, nnames[i],
+             ha="left", va="center")
+
+    if cd and cdmethod is None:
+        # upper scale
+        if not reverse:
+            begin, end = rankpos(lowv), rankpos(lowv + cd)
+        else:
+            begin, end = rankpos(highv), rankpos(highv - cd)
+
+        line([(begin, distanceh), (end, distanceh)], linewidth=0.7)
+        line([(begin, distanceh + bigtick / 2),
+              (begin, distanceh - bigtick / 2)],
+             linewidth=0.7)
+        line([(end, distanceh + bigtick / 2),
+              (end, distanceh - bigtick / 2)],
+             linewidth=0.7)
+        text((begin + end) / 2, distanceh - 0.05, "CD",
+             ha="center", va="bottom")
+
+        # no-significance lines
+        def draw_lines(lines, side=0.05, height=0.1):
+            start = cline + 0.2
+            for l, r in lines:
+                line([(rankpos(ssums[l]) - side, start),
+                      (rankpos(ssums[r]) + side, start)],
+                     linewidth=2.5)
+                start += height
+
+        draw_lines(lines)
+
+    elif cd:
+        begin = rankpos(avranks[cdmethod] - cd)
+        end = rankpos(avranks[cdmethod] + cd)
+        line([(begin, cline), (end, cline)],
+             linewidth=2.5)
+        line([(begin, cline + bigtick / 2),
+              (begin, cline - bigtick / 2)],
+             linewidth=2.5)
+        line([(end, cline + bigtick / 2),
+              (end, cline - bigtick / 2)],
+             linewidth=2.5)
+
+    if filename:
+        print_figure(fig, filename, **kwargs)
 # Funciones para hacer parsing
+def compute_CD(avranks, n, alpha="0.05", test="nemenyi"):
+    """
+    Returns critical difference for Nemenyi or Bonferroni-Dunn test
+    according to given alpha (either alpha="0.05" or alpha="0.1") for average
+    ranks and number of tested datasets N. Test can be either "nemenyi" for
+    for Nemenyi two tailed test or "bonferroni-dunn" for Bonferroni-Dunn test.
+    """
+    k = len(avranks)
+    d = {("nemenyi", "0.05"): [0, 0, 1.959964, 2.343701, 2.569032, 2.727774,
+                               2.849705, 2.94832, 3.030879, 3.101730, 3.163684,
+                               3.218654, 3.268004, 3.312739, 3.353618, 3.39123,
+                               3.426041, 3.458425, 3.488685, 3.517073,
+                               3.543799],
+         ("nemenyi", "0.1"): [0, 0, 1.644854, 2.052293, 2.291341, 2.459516,
+                              2.588521, 2.692732, 2.779884, 2.854606, 2.919889,
+                              2.977768, 3.029694, 3.076733, 3.119693, 3.159199,
+                              3.195743, 3.229723, 3.261461, 3.291224, 3.319233],
+         ("bonferroni-dunn", "0.05"): [0, 0, 1.960, 2.241, 2.394, 2.498, 2.576,
+                                       2.638, 2.690, 2.724, 2.773],
+         ("bonferroni-dunn", "0.1"): [0, 0, 1.645, 1.960, 2.128, 2.241, 2.326,
+                                      2.394, 2.450, 2.498, 2.539]}
+    q = d[(test, alpha)]
+    cd = q[k] * (k * (k + 1) / (6.0 * n)) ** 0.5
+    return cd
+
 
 def parse_results(ll, times,root,name,leng):
     means = np.mean(ll,axis=1)
@@ -196,72 +477,21 @@ MT[2][0][7]   =  0.4; MT[2][1][7] = 0.4; MT[2][1][8] = 0.4; MT[2][2][7] =  0.4 ;
 data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
 lengths_gen  = np.array([len(data_gen)])
 sroot = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\models"
-#%% Model declaration
-times = []
-model1 = KDE_AsHMM(data_gen, 3,P=P)
-model2 = KDE_AsHMM(data_gen, 3,P=P)
-model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
-model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
-model3 = hmm(data_gen,lengths_gen,3,P=P)
-model4 = hmm(data_gen, lengths_gen,3,P=P)
-model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
-#%% Model training
-tick1 = time.time()
-model1.EM()
-tock1 = time.time()
-
-tick2 = time.time()
-model2.SEM()
-tock2 = time.time()
-
-tick3 = time.time()
-model21.SEM()
-tock3 = time.time()
-
-tick4 = time.time()
-model22.SEM()
-tock4 = time.time()
-
-tick5 = time.time()
-model3.EM()
-tock5 = time.time()
-
-tick6 = time.time()
-model4.SEM()
-tock6 = time.time()
-
-tick7 = time.time()
-model5.EM()
-tock7 = time.time()
-
-
-#%% Save models
-model1.save(sroot,name="synt_mod1_long")
-model2.save(sroot,name="synt_mod2_long")
-model21.save(sroot,name="synt_mod21_long")
-model22.save(sroot,name="synt_mod22_long")
-model3.save(sroot,name="synt_mod3_long")
-model4.save(sroot,name="synt_mod4_long")
-model5.save(sroot,name="synt_mod5_long")
-times = [tock1-tick1,tock2-tick2,tock3-tick3, tock4-tick4, tock5-tick5, tock6-tick6, tock7-tick7]
-np.save(sroot+"\\"+"tiempos_long", times)
-#%% Load models
-# model1.load(sroot  + "\\" + "synt_mod1.kdehmm")
-# model2.load(sroot  + "\\" + "synt_mod2.kdehmm")
-# model21.load(sroot + "\\" + "synt_mod21.kdehmm")
-# model22.load(sroot + "\\" + "synt_mod22.kdehmm")
-# model3.load(sroot  + "\\" + "synt_mod3.kdehmm")
-# model4.load(sroot  + "\\" + "synt_mod4.kdehmm")
-# model5.load(sroot  + "\\" + "synt_mod5.kdehmm")
-# times = np.load(sroot+"\\"+"tiempos.npy")
 #%% Generating several models
-test_nlen = [50,100,150,200,250,300]
+test_nlen = [50,100,150,200,250,300,350]
 train = False
-n_pruebas =200
+n_pruebas = 300
 means  = []
 stds = []
 meansx = []
 stdsx = []
+logs = []
+nss = (np.ones(3)*200).astype(int)
+testing_data = []
+for t in range(n_pruebas):
+    testing_data.append(gen_nl_random(nss,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide))
+
+#%%
 for j in test_nlen:
     try:
         os.mkdir(sroot+"\\"+"models_len"+str(j))
@@ -269,6 +499,15 @@ for j in test_nlen:
         pass
     srootj = sroot+"\\"+"models_len"+str(j)
     nses = (np.ones(3)*j).astype(int)
+    
+    tr = np.repeat(np.array(seqss),j)
+    depo = np.ones([j*len(seqss),3])*1e-18
+    for i in range(3):
+        indexi = np.argwhere(tr==i).T[0]
+        depo[indexi,i] = 1 
+    depo = depo/np.sum(depo,axis=0)
+    depo = depo[P:]
+    
     data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
     lengths_gen  = np.array([len(data_gen)])
     times = []
@@ -278,7 +517,7 @@ for j in test_nlen:
     model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
     model3 = hmm(data_gen,lengths_gen,3,P=P)
     model4 = hmm(data_gen, lengths_gen,3,P=P)
-    model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+    model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P,v=depo)
     if train == True:
         tick1 = time.time()
         model1.EM()
@@ -306,9 +545,9 @@ for j in test_nlen:
             model4.SEM()
             tock6 = time.time()
         except:
-            model4 = hmm(data_gen, lengths_gen,3,P=P,struc=False)
+            model4 = hmm(data_gen, lengths_gen,3,P=P)
             tick6 = time.time()
-            model4.SEM()
+            model4.EM()
             tock6 = time.time()
         
         tick7 = time.time()
@@ -329,8 +568,8 @@ for j in test_nlen:
         model2.load(srootj  + "\\" + "synt_mod2_"+str(j)+".kdehmm")
         model21.load(srootj + "\\" + "synt_mod21_"+str(j)+".kdehmm")
         model22.load(srootj + "\\" + "synt_mod22_"+str(j)+".kdehmm")
-        model3.load(srootj  + "\\" + "synt_mod3_"+str(j)+".kdehmm")
-        model4.load(srootj  + "\\" + "synt_mod4_"+str(j)+".kdehmm")
+        model3.load(srootj  + "\\" + "synt_mod3_"+str(j)+".ashmm")
+        model4.load(srootj  + "\\" + "synt_mod4_"+str(j)+".ashmm")
         model5.load(srootj  + "\\" + "synt_mod5_"+str(j)+".kdehmm")
         times = np.load(srootj+"\\"+"tiempos_long.npy")
 
@@ -344,8 +583,7 @@ for j in test_nlen:
     ll5  = []
     error = []
     for t in range(pruebas):
-        data_gen_test = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
-        errori = np.zeros([pruebas,7])
+        data_gen_test = testing_data[t]
         ll1.append(model1.log_likelihood(data_gen_test))
         ll2.append(model2.log_likelihood(data_gen_test ))
         ll21.append(model21.log_likelihood(data_gen_test ))
@@ -377,64 +615,98 @@ for j in test_nlen:
     print("Likelihood AR-AsLG-HMM:           "+ str(np.mean(ll4)))
     print("Likelihood KDE-HMM with known BN: "+ str(np.mean(ll5)))
     ll =  np.array([ll1, ll2, ll21, ll22, ll3, ll4, ll5])
-    rr = parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_"+str(j),len(data_gen))
+    rr = parse_results(ll,times,r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt","syn_table_"+str(j),len(data_gen_test))
     means.append(rr[0])
     stds.append(rr[1])
     meansx.append(rr[2])
     stdsx.append(rr[3])
-means = np.array(means)
-stds  = np.array(stds)
+    logs.append(ll)
+    print("Temine para T_train = "+str(j))
+means  = np.array(means)
+stds   = np.array(stds)
 meansx = np.array(meansx)
 stdsx  = np.array(stdsx)
+logs   = np.array(logs)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\meansx",meansx)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stdsx",stdsx)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\means",means)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stds",stds)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs",logs)
 
-
+#%% plots
 plt.figure("Mean likelihood ")
-plt.plot(np.arange(1,7)*350,means[:,0],label = "KDE-HMM",color="red")
-plt.fill_between(np.arange(1,7)*350,means[:,0]+2*stds[:,0],means[:,0]-2*stds[:,0],color="red",alpha=0.5)
+plt.clf()
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,0],label = "KDE-HMM",color="red",linestyle= "dotted")
+# plt.fill_between(np.arange(1,7)*350,means[:,0]+2*stds[:,0],means[:,0]-2*stds[:,0],color="red",alpha=0.5)
 
-plt.plot(np.arange(1,7)*350,means[:,1],label = "KDE-AsHMM",color="blue")
-plt.fill_between(np.arange(1,7)*350,means[:,1]+2*stds[:,1],means[:,1]-2*stds[:,1],color="blue",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,1],label = "KDE-AsHMM",color="blue",linestyle = "solid")
+# plt.fill_between(np.arange(1,7)*350,means[:,1]+2*stds[:,1],means[:,1]-2*stds[:,1],color="blue",alpha=0.5)
 
-plt.plot(np.arange(1,7)*350,means[:,2],label = "KDE-ARHMM",color="green")
-plt.fill_between(np.arange(1,7)*350,means[:,2]+2*stds[:,2],means[:,2]-2*stds[:,2],color="green",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,2],label = "KDE-ARHMM",color="green", linestyle = (0,(5,1)))
+# plt.fill_between(np.arange(1,7)*350,means[:,2]+2*stds[:,2],means[:,2]-2*stds[:,2],color="green",alpha=0.5)
 
-plt.plot(np.arange(1,7)*350,means[:,3],label = "KDE-BNHMM",color="gray")
-plt.fill_between(np.arange(1,7)*350,means[:,3]+2*stds[:,3],means[:,3]-2*stds[:,3],color="gray",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,3],label = "KDE-BNHMM",color="magenta",linestyle = "dashed")
+# plt.fill_between(np.arange(1,7)*350,means[:,3]+2*stds[:,3],means[:,3]-2*stds[:,3],color="gray",alpha=0.5)
 
-plt.plot(np.arange(1,7)*350,means[:,4],label = "HMM",color="black")
-plt.fill_between(np.arange(1,7)*350,means[:,4]+2*stds[:,4],means[:,4]-2*stds[:,4],color="black",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,4],label = "HMM",color="black",linestyle = "dashdot")
+# plt.fill_between(np.arange(1,7)*350,means[:,4]+2*stds[:,4],means[:,4]-2*stds[:,4],color="black",alpha=0.5)
 
-plt.plot(np.arange(1,7)*350,means[:,5],label = "AR-AsLG-HMM",color="orange")
-plt.fill_between(np.arange(1,7)*350,means[:,5]+2*stds[:,5],means[:,5]-2*stds[:,5],color="orange",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,5],label = "AR-AsLG-HMM",color="orange", linestyle = (0,(1,2)))
+# plt.fill_between(np.arange(1,7)*350,means[:,5]+2*stds[:,5],means[:,5]-2*stds[:,5],color="orange",alpha=0.5)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,means[:,6],label = "KDE-AsHMM*",color="cyan", linestyle = (0,(2,2)))
+# plt.fill_between(np.arange(1,7)*350,means[:,5]+2*stds[:,5],means[:,5]-2*stds[:,5],color="orange",alpha=0.5)
 plt.grid("on")
 plt.ylabel("$\mu(LL)$")
-plt.xlabel("$T$")
+plt.xlabel("$T$ for training")
 plt.legend()
 
 
 plt.figure("Mean likelihood per unit data ")
-plt.plot(np.arange(1,7)*350,meansx[:,0],label = "KDE-HMM",color="red")
-plt.fill_between(np.arange(1,7)*350,meansx[:,0]+2*stdsx[:,0],meansx[:,0]-2*stdsx[:,0],color="red",alpha=0.5)
+plt.clf()
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,0],label = "KDE-HMM",color="red",linestyle= "dotted",linewidth=2)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,0]+2*stdsx[:,0],meansx[:,0]-2*stdsx[:,0],color="red",alpha=0.1)
 
-plt.plot(np.arange(1,7)*350,meansx[:,1],label = "KDE-AsHMM",color="blue")
-plt.fill_between(np.arange(1,7)*350,meansx[:,1]+2*stdsx[:,1],meansx[:,1]-2*stdsx[:,1],color="blue",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,1],label = "KDE-AsHMM",color="blue",linestyle = "solid")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,1]+2*stdsx[:,1],meansx[:,1]-2*stdsx[:,1],color="blue",alpha=0.1)
 
-plt.plot(np.arange(1,7)*350,meansx[:,2],label = "KDE-ARHMM",color="green")
-plt.fill_between(np.arange(1,7)*350,meansx[:,2]+2*stdsx[:,2],meansx[:,2]-2*stdsx[:,2],color="green",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,2],label = "KDE-ARHMM",color="green", linestyle = (0,(5,1)))
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,2]+2*stdsx[:,2],meansx[:,2]-2*stdsx[:,2],color="green",alpha=0.1)
 
-plt.plot(np.arange(1,7)*350,meansx[:,3],label = "KDE-BNHMM",color="gray")
-plt.fill_between(np.arange(1,7)*350,meansx[:,3]+2*stdsx[:,3],meansx[:,3]-2*stdsx[:,3],color="gray",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,3],label = "KDE-BNHMM",color="magenta",linestyle = "dashed")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,3]+2*stdsx[:,3],meansx[:,3]-2*stdsx[:,3],color="magenta",alpha=0.1)
 
-plt.plot(np.arange(1,7)*350,meansx[:,4],label = "HMM",color="black")
-plt.fill_between(np.arange(1,7)*350,meansx[:,4]+2*stdsx[:,4],meansx[:,4]-2*stdsx[:,4],color="black",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,4],label = "HMM",color="black",linestyle = "dashdot")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,4]+2*stdsx[:,4],meansx[:,4]-2*stdsx[:,4],color="black",alpha=0.1)
 
-plt.plot(np.arange(1,7)*350,meansx[:,5],label = "AR-AsLG-HMM",color="orange")
-plt.fill_between(np.arange(1,7)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="orange",alpha=0.5)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,5],label = "AR-AsLG-HMM",color="orange", linestyle = (0,(1,2)),linewidth=2)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="orange",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,6],label = "KDE-AsHMM*",color="gray", linestyle = (0,(3,1)),linewidth=3)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="cyan",alpha=0.1)
+
 plt.grid("on")
 plt.ylabel("$\mu(LL/T)$")
-plt.xlabel("$T$")
+plt.xlabel("$T$ for training")
 plt.legend()
-
-
-#%%
+plt.tight_layout()
+#%% compute the rankings
+# meansx = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\meansx.npy")
+# stdsx  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stdsx.npy")
+# means  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\means.npy")
+# stds   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stds.npy")
+# logs   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs.npy")
+# logs = np.array(logs)
+# np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs",logs)
+rank = []
+pruebas = 0
+# for i in range(len(test_nlen)):
+for j in range(n_pruebas):
+    rank.append(np.argsort(np.argsort(-logs[i,:,j])))
+    pruebas = pruebas + 1 
+rank = np.array(rank)
+avg_rank = np.mean(rank,axis=0)
+cd = compute_CD(avg_rank, pruebas,alpha="0.05", test="nemenyi") #tested on 14 datasets 
+names =["KDE-HMM","KDE-AsHMM","KDE-ARHMM","KDE-BNHMM","HMM","AR-AsLG-HMM","KDE-AsHMM*"]
+graph_ranks(avg_rank, names, cd=cd, width=5, textspace=1.5)
 
