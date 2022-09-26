@@ -113,17 +113,19 @@ for i in unworn:
         model3.load(root_unworn+"\\"+"HMM_unworn"+str(i)+".ashmm")
         model4.load(root_unworn+"\\"+"AR-AsLG-HMM_unworn"+str(i)+".ashmm")
         modeli.append([i,model1,model2,model3,model4])
+    models_unworn.append(modeli)
+
 #%% Testing
 # worn
 ll_worn = []
-for i in worn:
+for l, i in enumerate(worn):
     llworni = []
-    models_worni = models_worn[i]
-    actual_i = models_worni[0]
-    mod1 = models_worni[1]
-    mod2 = models_worni[2]
-    mod3 = models_worni[3]
-    mod4 = models_worni[4]
+    models_worni = models_worn[l]
+    actual_i = models_worni[0][0]
+    mod1 = models_worni[0][1]
+    mod2 = models_worni[0][2]
+    mod3 = models_worni[0][3]
+    mod4 = models_worni[0][4]
     for j in worn:
         if j!= i:
             ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
@@ -136,14 +138,14 @@ ll_worn = np.array(ll_worn)
 np.save(root_worn+"\\"+"ll_worn",ll_worn)
 
 ll_unworn = []
-for i in unworn:
+for l,i in enumerate(unworn):
     llunworni = []
-    models_unworni = models_unworn[i]
-    actual_i = models_unworni[0]
-    mod1 = models_unworni[1]
-    mod2 = models_unworni[2]
-    mod3 = models_unworni[3]
-    mod4 = models_unworni[4]
+    models_unworni = models_unworn[l]
+    actual_i = models_unworni[0][0]
+    mod1 = models_unworni[0][1]
+    mod2 = models_unworni[0][2]
+    mod3 = models_unworni[0][3]
+    mod4 = models_unworni[0][4]
     for j in unworn:
         if j!= i:
             ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
@@ -156,14 +158,14 @@ ll_unworn = np.array(ll_unworn)
 np.save(root_unworn+"\\"+"ll_unworn",ll_unworn)
 
 ll_un2worn = []
-for i in unworn:
+for l, i in enumerate(unworn):
     llworni = []
-    models_unworni = models_unworn[i]
-    actual_i = models_unworni[0]
-    mod1 = models_unworni[1]
-    mod2 = models_unworni[2]
-    mod3 = models_unworni[3]
-    mod4 = models_unworni[4]
+    models_unworni = models_unworn[l]
+    actual_i = models_unworni[0][0]
+    mod1 = models_unworni[0][1]
+    mod2 = models_unworni[0][2]
+    mod3 = models_unworni[0][3]
+    mod4 = models_unworni[0][4]
     for j in worn:
         ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
         ll2ij = mod2.log_likelihood(datasets[j],xunit=True)

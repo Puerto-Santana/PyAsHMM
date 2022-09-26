@@ -632,7 +632,12 @@ logs   = np.array(logs)
 # np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\means",means)
 # np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stds",stds)
 # np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs",logs)
-
+#%% Load results
+meansx = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\meansx.npy")
+stdsx  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stdsx.npy")
+means  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\means.npy")
+stds   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stds.npy")
+logs   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs.npy")
 #%% plots
 plt.figure("Mean likelihood ")
 plt.clf()
@@ -691,11 +696,7 @@ plt.xlabel("$T$ for training")
 plt.legend()
 plt.tight_layout()
 #%% compute the rankings
-# meansx = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\meansx.npy")
-# stdsx  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stdsx.npy")
-# means  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\means.npy")
-# stds   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\stds.npy")
-# logs   = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs.npy")
+
 # logs = np.array(logs)
 # np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs",logs)
 rank = []
