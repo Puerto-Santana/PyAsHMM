@@ -59,23 +59,23 @@ for i in worn:
         model1.EM()
         model1.save(root_worn, name= "KDE_HMM_worn"+str(i) )
         model2.SEM()
-        model1.save(root_worn, name= "KDE_AsHMM_worn"+str(i) )
+        model2.save(root_worn, name= "KDE_AsHMM_worn"+str(i) )
         model3.EM()
-        model1.save(root_worn, name= "HMM_worn"+str(i) )
+        model3.save(root_worn, name= "HMM_worn"+str(i) )
         try:
             model4.SEM()
-            model1.save(root_worn, name= "AR-AsLG-HMM_worn" +str(i))
+            model4.save(root_worn, name= "AR-AsLG-HMM_worn" +str(i))
         except:
             model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
             model4.EM()
-            model1.save(root_worn, name= "AR-AsLG-HMM_worn"+str(i) )
-        modeli = [model1,model2,model3,model4]
+            model4.save(root_worn, name= "AR-AsLG-HMM_worn"+str(i) )
+        modeli.append([i,model1,model2,model3,model4])
     else:
         model1.load(root_worn+"\\"+"KDE_HMM_worn"+str(i)+".kdehmm")
         model2.load(root_worn+"\\"+"KDE_AsHMM_worn"+str(i)+".kdehmm")
         model3.load(root_worn+"\\"+"HMM_worn"+str(i)+".ashmm")
         model4.load(root_worn+"\\"+"AR-AsLG-HMM_worn"+str(i)+".ashmm")
-        modeli = [i,model1,model2,model3,model4]
+        modeli.append([i,model1,model2,model3,model4])
     models_worn.append(modeli)
         
         
@@ -87,7 +87,7 @@ except:
 root_unworn = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\unworn_models"
 models_unworn = []
 for i in unworn:
-    modlei = []
+    modeli = []
     model1 = kde(datasets[i],7,P=1)
     model2 = kde(datasets[i],7,P=1)
     model3 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
@@ -96,16 +96,16 @@ for i in unworn:
         model1.EM()
         model1.save(root_unworn, name= "KDE_HMM_unworn"+str(i))
         model2.SEM()
-        model1.save(root_unworn, name= "KDE_AsHMM_unworn" +str(i))
+        model2.save(root_unworn, name= "KDE_AsHMM_unworn" +str(i))
         model3.EM()
-        model1.save(root_unworn, name= "HMM_unworn" +str(i))
+        model3.save(root_unworn, name= "HMM_unworn" +str(i))
         try:
             model4.SEM()
-            model1.save(root_unworn, name= "AR-AsLG-HMM_unworn"+str(i))
+            model4.save(root_unworn, name= "AR-AsLG-HMM_unworn"+str(i))
         except:
             model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
-            model4.SEM()
-            model1.save(root_unworn, name= "AR-AsLG-HMM_unworn" +str(i))
+            model4.EM()
+            model4.save(root_unworn, name= "AR-AsLG-HMM_unworn" +str(i))
         modeli.append([i,model1,model2,model3,model4])
     else:
         model1.load(root_unworn+"\\"+"KDE_HMM_unworn"+str(i)+".kdehmm")
