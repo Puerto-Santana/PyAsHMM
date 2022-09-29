@@ -1112,7 +1112,7 @@ class KDE_AsHMM:
                 mean = yl[0][k] + np.dot(Mik,(ulk-rlk).T)
                 datal[0,k] = np.random.normal(mean[0][0],hik,1)
             data[l] = datal
-        return data
+        return data[self.P:]
         
         
     def plot_densities_k(self,k,leng=500,nombre="",root = None):

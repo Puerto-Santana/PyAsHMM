@@ -547,11 +547,16 @@ for j in modelos:
     matrix_sum.append(matrix_sumi)
     matrices.append(matrizi)
     accuracies.append(accuri)
-    
 
 # pres = accuracy(matrix_sum)
 # print("Presicion de "+modelo +"\n"+ str(presiciones) +"\n" +"Presicion acumulada: " +str(pres))
 # print("Presicion media: " +str(np.mean(presiciones)) )
+
+#%% Load models to observe their distirbution and Bayesian netwrork
+sample_model = load_model(sroot,"KDE-AsHMM",1,"pig")
+sample_model2 = load_model(sroot,"AR-AsLG-HMM",0,"pig")
+nombres = ["MFCC_0","MFCC_1","MFCC_2","MFCC_3","MFCC_4","MFCC_5"]
+sample_model.plot_graph(label=nombres)
 
 
 

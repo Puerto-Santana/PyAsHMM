@@ -434,6 +434,26 @@ def gen_nl_random_1sample(G,L,P,p,M,means,sigma,f1,f2,k,seed ):
                 mean += f2m
             xt[0][i] = np.random.normal(mean,sigma[i],1)
     return xt
+
+def load_model(j):
+    srootj = sroot+"\\"+"models_len"+str(j)
+    data_gen     = gen_nl_random(nses,seqss,G,L,P,p,MT,means_g,sigmas_g,k,square,ide)
+    model1 = KDE_AsHMM(data_gen, 3,P=P)
+    model2 = KDE_AsHMM(data_gen, 3,P=P)
+    model21 = KDE_AsHMM(data_gen, 3,P=P,struc=False)
+    model22 = KDE_AsHMM(data_gen, 3,P=P,lags=False)
+    model3 = hmm(data_gen,lengths_gen,3,P=P)
+    model4 = hmm(data_gen, lengths_gen,3,P=P)
+    model5 = KDE_AsHMM(data_gen,3,p=p,G=G,P=P)
+    model1.load(srootj  + "\\" + "synt_mod1_"+str(j)+".kdehmm")
+    model2.load(srootj  + "\\" + "synt_mod2_"+str(j)+".kdehmm")
+    model21.load(srootj + "\\" + "synt_mod21_"+str(j)+".kdehmm")
+    model22.load(srootj + "\\" + "synt_mod22_"+str(j)+".kdehmm")
+    model3.load(srootj  + "\\" + "synt_mod3_"+str(j)+".ashmm")
+    model4.load(srootj  + "\\" + "synt_mod4_"+str(j)+".ashmm")
+    model5.load(srootj  + "\\" + "synt_mod5_"+str(j)+".kdehmm")
+    return [model1,model2,model21,model22,model3,model4,model5]
+    
             
 #%% Generating data
 K       = 7
@@ -502,6 +522,7 @@ for j in test_nlen:
     
     tr = np.repeat(np.array(seqss),j)
     depo = np.ones([j*len(seqss),3])*1e-18
+    
     for i in range(3):
         indexi = np.argwhere(tr==i).T[0]
         depo[indexi,i] = 1 
@@ -667,6 +688,37 @@ plt.xlabel("$T$ for training")
 plt.legend()
 
 
+plt.figure("std likelihood per unit data ")
+plt.clf()
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,0],label = "KDE-HMM",color="red",linestyle= "dotted",linewidth=2)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,0]+2*stdsx[:,0],meansx[:,0]-2*stdsx[:,0],color="red",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,1],label = "KDE-AsHMM",color="blue",linestyle = "solid")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,1]+2*stdsx[:,1],meansx[:,1]-2*stdsx[:,1],color="blue",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,2],label = "KDE-ARHMM",color="green", linestyle = (0,(5,1)))
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,2]+2*stdsx[:,2],meansx[:,2]-2*stdsx[:,2],color="green",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,3],label = "KDE-BNHMM",color="magenta",linestyle = "dashed")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,3]+2*stdsx[:,3],meansx[:,3]-2*stdsx[:,3],color="magenta",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,4],label = "HMM",color="black",linestyle = "dashdot")
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,4]+2*stdsx[:,4],meansx[:,4]-2*stdsx[:,4],color="black",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,5],label = "AR-AsLG-HMM",color="orange", linestyle = (0,(1,2)),linewidth=3)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="orange",alpha=0.1)
+
+plt.plot(np.arange(1,len(test_nlen)+1)*350,stdsx[:,6],label = "KDE-AsHMM*",color="gray", linestyle = (0,(3,1)),linewidth=3)
+# plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="cyan",alpha=0.1)
+
+plt.grid("on")
+plt.ylabel("$\sigma(LL/T_{test})$")
+plt.xlabel("$T$ for training")
+plt.legend()
+plt.tight_layout()
+
+
+
 plt.figure("Mean likelihood per unit data ")
 plt.clf()
 plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,0],label = "KDE-HMM",color="red",linestyle= "dotted",linewidth=2)
@@ -684,17 +736,18 @@ plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,3],label = "KDE-BNHMM",color
 plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,4],label = "HMM",color="black",linestyle = "dashdot")
 # plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,4]+2*stdsx[:,4],meansx[:,4]-2*stdsx[:,4],color="black",alpha=0.1)
 
-plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,5],label = "AR-AsLG-HMM",color="orange", linestyle = (0,(1,2)),linewidth=2)
+plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,5],label = "AR-AsLG-HMM",color="orange", linestyle = (0,(1,2)),linewidth=3)
 # plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="orange",alpha=0.1)
 
 plt.plot(np.arange(1,len(test_nlen)+1)*350,meansx[:,6],label = "KDE-AsHMM*",color="gray", linestyle = (0,(3,1)),linewidth=3)
 # plt.fill_between(np.arange(1,len(test_nlen)+1)*350,meansx[:,5]+2*stdsx[:,5],meansx[:,5]-2*stdsx[:,5],color="cyan",alpha=0.1)
 
 plt.grid("on")
-plt.ylabel("$\mu(LL/T)$")
+plt.ylabel("$\mu(LL/T_{test})$")
 plt.xlabel("$T$ for training")
 plt.legend()
 plt.tight_layout()
+
 #%% compute the rankings
 
 # logs = np.array(logs)

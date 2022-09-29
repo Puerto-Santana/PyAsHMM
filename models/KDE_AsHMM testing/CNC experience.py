@@ -36,62 +36,47 @@ for f in files:
     features  = ['X1_ActualPosition',
                   'Y1_ActualPosition', 
                   'Z1_ActualPosition', 
-                  'S1_CommandPosition']
-    datasets.append(np.array(dataf[features])+np.random.normal(0,0.25,[len(dataf),4]))  
+                  'S1_ActualPosition']
+    key = 'Machining_Process'
+    dataf = dataf[dataf[key] != "Prep"]
+    dataf = dataf[dataf[key] != "Starting"]
+    dataf = dataf[dataf[key] != "End"]
+    dataf = dataf[dataf[key] != "end"]
+    datasets.append(np.array(dataf[features])+np.random.normal(0,0.5,[len(dataf),4]))  
+    
 #%% training
-worn   = [5,6,7,8,9,12,13,14,15,17]
-unworn = [0,1,2,3,4,10,11,16]
+worn   = [5, 6, 7, 8, 9, 12 ,13, 14, 15, 17]
+unworn = [0, 1, 2, 3, 4, 10, 11, 16]
+fold1  = [3, 11]
+fold2  = [4, 16]
+fold3  = [0, 10]
+fold4  = [1,  2]
+folds  = [fold1,fold2,fold3,fold4]
+
+fold5 = [5,9]
+fold6  = [7,13]
+fold7 = [6,12]
+fold8 = [8,14]
+fold9  = [15,17]
+folds2 = [fold5,fold6,fold7,fold8,fold9]
 train = False
-# Worn models 
-models_worn =[]
-try:
-    os.mkdir(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\worn_models")
-except:
-    pass
-root_worn = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\worn_models"
-for i in worn:
-    modeli = []
-    model1 = kde(datasets[i],7,P=1)
-    model2 = kde(datasets[i],7,P=1)
-    model3 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
-    model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
-    if train == True:
-        model1.EM()
-        model1.save(root_worn, name= "KDE_HMM_worn"+str(i) )
-        model2.SEM()
-        model2.save(root_worn, name= "KDE_AsHMM_worn"+str(i) )
-        model3.EM()
-        model3.save(root_worn, name= "HMM_worn"+str(i) )
-        try:
-            model4.SEM()
-            model4.save(root_worn, name= "AR-AsLG-HMM_worn" +str(i))
-        except:
-            model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
-            model4.EM()
-            model4.save(root_worn, name= "AR-AsLG-HMM_worn"+str(i) )
-        modeli.append([i,model1,model2,model3,model4])
-    else:
-        model1.load(root_worn+"\\"+"KDE_HMM_worn"+str(i)+".kdehmm")
-        model2.load(root_worn+"\\"+"KDE_AsHMM_worn"+str(i)+".kdehmm")
-        model3.load(root_worn+"\\"+"HMM_worn"+str(i)+".ashmm")
-        model4.load(root_worn+"\\"+"AR-AsLG-HMM_worn"+str(i)+".ashmm")
-        modeli.append([i,model1,model2,model3,model4])
-    models_worn.append(modeli)
-        
-        
-# unworn models 
+n_states = 7
+ 
 try:
     os.mkdir(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\unworn_models")
 except:
     pass
 root_unworn = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\unworn_models"
 models_unworn = []
-for i in unworn:
+for i ,l in enumerate(folds):
+    dataset_i = np.zeros([0,4])
+    for j in l:
+        dataset_i = np.concatenate([dataset_i,datasets[j]])
     modeli = []
-    model1 = kde(datasets[i],7,P=1)
-    model2 = kde(datasets[i],7,P=1)
-    model3 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
-    model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
+    model1 = kde(dataset_i,n_states,P=1)
+    model2 = kde(dataset_i,n_states,P=1)
+    model3 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=1)
+    model4 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=1)
     if train == True:
         model1.EM()
         model1.save(root_unworn, name= "KDE_HMM_unworn"+str(i))
@@ -103,7 +88,7 @@ for i in unworn:
             model4.SEM()
             model4.save(root_unworn, name= "AR-AsLG-HMM_unworn"+str(i))
         except:
-            model4 = hmm(datasets[i],np.array([len(datasets[i])]),7,P=1)
+            model4 = hmm(datasets[i],np.array([len(datasets[i])]),n_states,P=1)
             model4.EM()
             model4.save(root_unworn, name= "AR-AsLG-HMM_unworn" +str(i))
         modeli.append([i,model1,model2,model3,model4])
@@ -114,31 +99,48 @@ for i in unworn:
         model4.load(root_unworn+"\\"+"AR-AsLG-HMM_unworn"+str(i)+".ashmm")
         modeli.append([i,model1,model2,model3,model4])
     models_unworn.append(modeli)
+    
+try:
+    os.mkdir(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\worn_models")
+except:
+    pass
+root_worn = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\CNCmachine\worn_models"
+models_worn = []
+for i ,l in enumerate(folds2):
+    dataset_i = np.zeros([0,4])
+    for j in l:
+        dataset_i = np.concatenate([dataset_i,datasets[j]])
+    modeli = []
+    model1 = kde(dataset_i,n_states,P=1)
+    model2 = kde(dataset_i,n_states,P=1)
+    model3 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=1)
+    model4 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=1)
+    if train == True:
+        model1.EM()
+        model1.save(root_worn, name= "KDE_HMM_worn"+str(i))
+        model2.SEM()
+        model2.save(root_worn, name= "KDE_AsHMM_worn" +str(i))
+        model3.EM()
+        model3.save(root_worn, name= "HMM_worn" +str(i))
+        try:
+            model4.SEM()
+            model4.save(root_worn, name= "AR-AsLG-HMM_worn"+str(i))
+        except:
+            model4 = hmm(datasets[i],np.array([len(datasets[i])]),n_states,P=1)
+            model4.EM()
+            model4.save(root_worn, name= "AR-AsLG-HMM_worn" +str(i))
+        modeli.append([i,model1,model2,model3,model4])
+    else:
+        model1.load(root_worn+"\\"+"KDE_HMM_worn"+str(i)+".kdehmm")
+        model2.load(root_worn+"\\"+"KDE_AsHMM_worn"+str(i)+".kdehmm")
+        model3.load(root_worn+"\\"+"HMM_worn"+str(i)+".ashmm")
+        model4.load(root_worn+"\\"+"AR-AsLG-HMM_worn"+str(i)+".ashmm")
+        modeli.append([i,model1,model2,model3,model4])
+    models_worn.append(modeli)
 
 #%% Testing
-# worn
-ll_worn = []
-for l, i in enumerate(worn):
-    llworni = []
-    models_worni = models_worn[l]
-    actual_i = models_worni[0][0]
-    mod1 = models_worni[0][1]
-    mod2 = models_worni[0][2]
-    mod3 = models_worni[0][3]
-    mod4 = models_worni[0][4]
-    for j in worn:
-        if j!= i:
-            ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
-            ll2ij = mod2.log_likelihood(datasets[j],xunit=True)
-            ll3ij = mod3.log_likelihood(datasets[j],xunit=True)
-            ll4ij = mod4.log_likelihood(datasets[j],xunit=True)
-            llworni.append([ll1ij,ll2ij,ll3ij,ll4ij])
-    ll_worn.append(llworni)
-ll_worn = np.array(ll_worn)
-np.save(root_worn+"\\"+"ll_worn",ll_worn)
-
 ll_unworn = []
-for l,i in enumerate(unworn):
+for l in range(len(folds)):
     llunworni = []
     models_unworni = models_unworn[l]
     actual_i = models_unworni[0][0]
@@ -146,19 +148,20 @@ for l,i in enumerate(unworn):
     mod2 = models_unworni[0][2]
     mod3 = models_unworni[0][3]
     mod4 = models_unworni[0][4]
-    for j in unworn:
-        if j!= i:
-            ll1ij = mod1.log_likelihood(datasets[j],xunit=True)
-            ll2ij = mod2.log_likelihood(datasets[j],xunit=True)
-            ll3ij = mod3.log_likelihood(datasets[j],xunit=True)
-            ll4ij = mod4.log_likelihood(datasets[j],xunit=True)
-            llunworni.append([ll1ij,ll2ij,ll3ij,ll4ij])
+    for j in range(len(folds)):
+        if j!= l:
+            for k in folds[j]:
+                ll1ij = mod1.log_likelihood(datasets[k],xunit=True)
+                ll2ij = mod2.log_likelihood(datasets[k],xunit=True)
+                ll3ij = mod3.log_likelihood(datasets[k],xunit=True)
+                ll4ij = mod4.log_likelihood(datasets[k],xunit=True)
+                llunworni.append([ll1ij,ll2ij,ll3ij,ll4ij])
     ll_unworn.append(llunworni)
 ll_unworn = np.array(ll_unworn)
 np.save(root_unworn+"\\"+"ll_unworn",ll_unworn)
 
 ll_un2worn = []
-for l, i in enumerate(unworn):
+for l in range(len(folds)):
     llworni = []
     models_unworni = models_unworn[l]
     actual_i = models_unworni[0][0]
@@ -175,13 +178,16 @@ for l, i in enumerate(unworn):
     ll_un2worn.append(llworni)
 ll_un2worn = np.array(ll_un2worn)
 np.save(root_unworn+"\\"+"ll_un2worn",ll_un2worn)
-        
+#%% Plots y tablas a mostrar
+ll_un2worn = np.load(root_unworn+"\\"+"ll_un2worn.npy")
+ll_unworn  = np.load(root_unworn+"\\"+"ll_unworn.npy")
 
-
-
-        
-            
-            
+#log likelihoods per training dataset
+mtll_unworn  = np.mean(ll_unworn,axis=1)
+mtll_un2worn = np.mean(ll_un2worn,axis=1)
+   
+fm_unworn = np.mean(mtll_unworn,axis=0)   
+fm_un2worn = np.mean(mtll_un2worn,axis=0)            
 
             
             
