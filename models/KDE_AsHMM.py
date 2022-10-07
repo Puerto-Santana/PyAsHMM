@@ -145,7 +145,7 @@ class KDE_AsHMM:
             # Ap = aux_model.A
             # self.A = Ap
             A = np.ones([self.N,self.N])
-            np.fill_diagonal(A,999)
+            np.fill_diagonal(A,999) 
             self.A = A/np.sum(A,axis=1)
         else:
             if type(A) is np.ndarray:
@@ -868,7 +868,7 @@ class KDE_AsHMM:
         self.v = tempv
         self.M = tempM
         tock = time.time()
-        print("EM it: "+str(it-1)+", error: "+str(eps) + ", log-likelihood: "+str(likelinew))
+        print("EM it: "+str(it-1)+", error: "+str(round(eps,5)) + ", log-likelihood: "+str(round(likelinew,5)))
         print("EM optimization ended, it took: "+str(round(tock-tick,5))+"s or: " + str(round((tock-tick)/60.,5))+" min")
         
         
@@ -1111,8 +1111,8 @@ class KDE_AsHMM:
                         ulk = np.concatenate([ulk,[[ulkar]]],axis=1)
                 mean = yl[0][k] + np.dot(Mik,(ulk-rlk).T)
                 datal[0,k] = np.random.normal(mean[0][0],hik,1)
-            data[l] = datal
-        return data[self.P:]
+            data[l+self.P] = datal
+        return data
         
         
     def plot_densities_k(self,k,leng=500,nombre="",root = None):
@@ -1278,7 +1278,7 @@ class KDE_AsHMM:
         if root is not None:
             plt.savefig(root, dpi=600)
         
-    def plot_all_pairs_scatter(self,samples=500,root =None,name ="",indexes = None):
+    def plot_all_pairs_scatter(self,samples=500,root =None,name ="",indexes = None,labels = None):
         """
         Plot scatter plots from the learned parameters for all pairs of variables
 
@@ -1316,16 +1316,25 @@ class KDE_AsHMM:
                 for ff in indexes[l+1:]:
                     plt.subplot(n_rows,n_cols,count)
                     plt.scatter(data[:,gg],data[:,ff],label ="state: " +str(i))
-                    plt.xlabel("$X^t_"+str(gg)+"$")
-                    plt.ylabel("$X^t_"+str(ff)+"$")
+                    if labels is not None:
+                        plt.xlabel("$"+labels[gg]+"^t$")
+                        plt.ylabel("$"+labels[ff]+"^t$")
+                    else:
+                        plt.xlabel("$X^t_"+str(gg)+"$")
+                        plt.ylabel("$X^t_"+str(ff)+"$")
                     plt.legend()
                     plt.grid("on")
-                    plt.subplot(n_rows,n_cols,count+1)
+                    count = count+1
+                    plt.subplot(n_rows,n_cols,count)
                     plt.scatter(self.O[:,gg], self.O[:,ff],color="black")
-                    plt.xlabel("$X^t_" + str(gg)  + "$")
-                    plt.ylabel("$X^t_" + str(ff)  + "$")
+                    if labels is None:
+                        plt.xlabel("$X^t_" + str(gg)  + "$")
+                        plt.ylabel("$X^t_" + str(ff)  + "$")
+                    else:
+                        plt.xlabel("$"+labels[gg]+"^t$")
+                        plt.ylabel("$"+labels[ff]+"^t$")
                     plt.grid("on")
-                    count +=2
+                    count =count+ 1
         plt.tight_layout()
         if root is not None:
             plt.savefig(root, dpi=600)
