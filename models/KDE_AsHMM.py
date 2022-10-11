@@ -1338,6 +1338,55 @@ class KDE_AsHMM:
         plt.tight_layout()
         if root is not None:
             plt.savefig(root, dpi=600)
+            
+            
+    def plot_data_scatter(self,samples=500,root =None,name ="",indexes = None,labels = None):
+        """
+        Plot scatter plots from the learned parameters for all pairs of variables
+
+        Parameters
+        
+        ----------
+        samples : TYPE, optional int
+            DESCRIPTION. The default is 500. Number of instances for each sample for each hidden state
+        root : TYPE, optional str
+            DESCRIPTION. The default is None. route to save plot
+        name : TYPE, optional str
+            DESCRIPTION. The default is "". Name of the plot
+        Returns
+        -------
+        None.
+
+        """
+        if type(samples) is not int:
+            raise Exception("Leng must be a positive integer")
+        if indexes == None:
+            indexes = range(self.K)
+        n_plots = int(len(indexes)*(len(indexes)-1)/2)
+        if n_plots<6:
+            n_cols = n_plots
+            n_rows = 1
+        else:
+            n_cols = 6
+            n_rows = int(np.ceil(n_plots/6))
+        plt.figure("Scatter plots "+name)
+        plt.clf()
+        count = 1
+        for l, gg in enumerate(indexes):
+            for ff in indexes[l+1:]:
+                plt.subplot(n_rows,n_cols,count)
+                plt.scatter(self.O[:,gg], self.O[:,ff],color="black")
+                if labels is None:
+                    plt.xlabel("$X^t_" + str(gg)  + "$")
+                    plt.ylabel("$X^t_" + str(ff)  + "$")
+                else:
+                    plt.xlabel("$"+labels[gg]+"^t$")
+                    plt.ylabel("$"+labels[ff]+"^t$")
+                plt.grid("on")
+                count =count+ 1
+        plt.tight_layout()
+        if root is not None:
+            plt.savefig(root, dpi=600)
 
     def plot_AR_k_scatter(self,k,samples=500,root=None):
         """
