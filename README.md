@@ -13,10 +13,10 @@ $$
 	b_i(\boldsymbol{X}^t) = \sum_{l= P^*}^T \omega_{il}\prod_{m=1}^M\frac{1}{h_{im}}K\left( \frac{X^t_m -\mu_{im}^l}{h_{im}} \right)
 $$
 
-Where the added latent variable $\boldsymbol{W}^t$ is a categorical distribution, which depends on the latent variables $\boldsymbol{Q}^t$, which is used to determine the most representative instances to describe the kernel of each hidden state.   Assume that each variable $X^t_m$ for each hidden state $i$, is associated to  $\boldsymbol{U}^t_{im}= (V^t_{im1},...,V^t_{im\kappa_{im}},X^{t-1}_m,...,X^{t-p_{im}}_m)$ a context-specific random vector, which contains the $\kappa_{im}$ parents and $p_{im}$ AR dependencies of the variables $X^t_m$. Let $\boldsymbol{v}^l_{Q^tm}$ be the instantiate of the random vector $\boldsymbol{U}^t_{Q^t,m}$ in $\boldsymbol{y}^{0:L}$, then the reference value  for each kernel component is computed as:
+Where the added latent variable $\boldsymbol{W}^t$ is a categorical distribution, which depends on the latent variables $\boldsymbol{Q}^t$, which is used to determine the most representative instances to describe the kernel of each hidden state.   Assume that each variable $X^t_m$ for each hidden state $i$, is associated to  $\boldsymbol{U}^t_{im} = ( V^t_{im1} , ... , V^t_{im\kappa_{im}} , X^{t-1}_m ,..., X^{t-p_{im}}_m )$ a context-specific random vector, which contains the $\kappa_{im}$ parents and $p_{im}$ AR dependencies of the variables $X^t_m$. Let $\boldsymbol{v}^l_{Q^tm}$ be the instantiate of the random vector $\boldsymbol{U}^t_{Q^t,m}$ in $\boldsymbol{y}^{0:L}$, then the reference value  for each kernel component is computed as:
 
 $$
-	\mu_{Q^t,m}^l := y_m^l +\boldsymbol{M}_{Q^t,m}(\boldsymbol{U}^t_{Q^t,m}-\boldsymbol{v}^l_{Q^t,m})^{\top}\boldsymbol{v}^l_{Q^t,m})^{\top}
+	\mu_{Q^t,m}^l := y_m^l + \boldsymbol{M}_{Q^t,m} ( \boldsymbol{U}^t_{Q^t,m} - \boldsymbol{v}^l_{Q^t,m} )^{\top} \boldsymbol{v}^l_{Q^t,m} )^{\top}
 $$
 
 In this manner, the deviations on parents and AR values can be used to correct the kernel as the data requires.
