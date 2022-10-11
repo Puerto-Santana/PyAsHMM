@@ -488,6 +488,8 @@ def load_model(sroot, type_model,fold,key):
     return model
 
 #%% Crear atlas
+#download files from https://www.kaggle.com/datasets/mmoreaux/environmental-sound-classification-50
+# root = "put the path where your files are"
 root = r"C:\Users\fox_e\OneDrive\Documentos\datasets\Voice_recognition\audio\audio\16000"
 catalog = pd.read_csv(r"C:\Users\fox_e\OneDrive\Documentos\datasets\Voice_recognition\esc50.csv")
 categories =  list(set(catalog["category"]))
@@ -515,20 +517,14 @@ for i in range(5):
     
 for i in range(5):
     one_fold_model_training(atlas,categories,3, i, root,sroot,"KDE-HMM",P=1,force=force)
-    
-
-
 #%% Cross-validation
 aggregated_confusion(atlas, categories, 3, root, sroot,"HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"AR-AsLG-HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-HMM")
 aggregated_confusion(atlas, categories, 3, root, sroot,"KDE-AsHMM")
 #%% Resultados
+loc = "Put here where you want to save your results"
 loc = r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\Audio"
-# modelo = "HMM"
-# modelo = "AR-AsLG-HMM"
-# modelo = "KDE-HMM"
-# modelo = "KDE-AsHMM"
 modelos  =["HMM","AR-AsLG-HMM","KDE-HMM","KDE-AsHMM"]
 matrices = []
 presiciones = []
@@ -547,14 +543,8 @@ for j in modelos:
     matrix_sum.append(matrix_sumi)
     matrices.append(matrizi)
     accuracies.append(accuri)
-
-# pres = accuracy(matrix_sum)
-# print("Presicion de "+modelo +"\n"+ str(presiciones) +"\n" +"Presicion acumulada: " +str(pres))
-# print("Presicion media: " +str(np.mean(presiciones)) )
-
-#%% Load models to observe their distirbution and Bayesian netwrork
+#%% Load models to observe their distribution and Bayesian netwrork
 sample_model = load_model(sroot,"KDE-AsHMM",1,"pig")
-sample_model2 = load_model(sroot,"AR-AsLG-HMM",0,"pig")
 nombres = ["MFCC_0","MFCC_1","MFCC_2","MFCC_3","MFCC_4","MFCC_5"]
 sample_model.plot_graph(label=nombres)
 

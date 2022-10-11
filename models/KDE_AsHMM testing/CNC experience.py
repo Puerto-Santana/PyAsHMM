@@ -15,7 +15,7 @@ import pandas as pd
 from KDE_AsHMM import KDE_AsHMM as kde
 from AR_ASLG_HMM import AR_ASLG_HMM as hmm
 #%% Import data
-#Download the files from https://www.kaggle.com/datasets/shasun/tool-wear-detection-in-cnc-mill
+# Download the files from the dataset https://www.kaggle.com/datasets/shasun/tool-wear-detection-in-cnc-mill
 
 # rootf = "PATH OF THE FILE WERE YOU UNZIPPED THE FILES"
 rootf = r"C:\Users\fox_e\OneDrive\Documentos\datasets\CNC milling machine\CSV"
@@ -141,7 +141,7 @@ ll_accepted     = np.load(root_accepted+"\\"+"ll_accepted.npy")
 mtll_accepted = np.mean(ll_accepted,axis=1)
 mtll_accepted2non = np.mean(ll_accepted2non,axis=1)
 
-#mean log-likelihoods in everage
+#mean log-likelihoods in average
 fm_accepted     = np.median(mtll_accepted,axis=0)   
 fm_accepted2non = np.median(mtll_accepted2non,axis=0)     
 

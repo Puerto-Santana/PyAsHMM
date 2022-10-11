@@ -213,10 +213,6 @@ class KDE_AsHMM:
             
         # Setting the kernel mixture coefficients
         if v is None:
-            # self.v = self.init_v(self.O, self.N, self.h[0], self.P)
-            # vv = aux_model.forBack[0].gamma
-            # vv = vv/np.sum(vv,axis=0)
-            # self.v  = vv
             vv = np.random.uniform(0.4,0.6,[self.length-self.P,self.N])
             self.v = vv/np.sum(vv,axis=0)
         else:
