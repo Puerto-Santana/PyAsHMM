@@ -749,18 +749,36 @@ plt.legend()
 plt.tight_layout()
 
 #%% compute the rankings
+from scipy.stats import chi2 as chi
 
 # logs = np.array(logs)
 # np.save(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs",logs)
-rank = []
+logs  = np.load(r"C:\Users\fox_e\Dropbox\Doctorado\Tentative papers\Kernel HMM\KDE-JMM elsevier\kdefig\synt\logs.npy")
+rank_6 = []
 pruebas = 0
-# for i in range(len(test_nlen)):
 for j in range(n_pruebas):
-    rank.append(np.argsort(np.argsort(-logs[i,:,j])))
+    rank_6.append(np.argsort(np.argsort(-logs[6,:,j])))
     pruebas = pruebas + 1 
-rank = np.array(rank)
-avg_rank = np.mean(rank,axis=0)
-cd = compute_CD(avg_rank, pruebas,alpha="0.05", test="nemenyi") #tested on 14 datasets 
+rank_6 = np.array(rank_6)
+avg_rank_6 = np.mean(rank_6,axis=0)
+
+rank_0 = []
+pruebas = 0
+for j in range(n_pruebas):
+    rank_0.append(np.argsort(np.argsort(-logs[0,:,j])))
+    pruebas = pruebas + 1 
+rank_0 = np.array(rank_0)
+avg_rank_0 = np.mean(rank_0,axis=0)
+
+# Friedman test
+Q_0 = 12*pruebas/(7*8)*np.sum((avg_rank_0-4)**2)
+Q_6 = 12*pruebas/(7*8)*np.sum((avg_rank_6-4)**2)
+crit = chi.ppf(0.95,6)
+p_val_0 = 1-chi.cdf(Q_0,6)
+p_val_6 = 1-chi.cdf(Q_6,6)
+
+
+cd = compute_CD(avg_rank_6, pruebas,alpha="0.05", test="nemenyi") #tested on 14 datasets 
 names =["KDE-HMM","KDE-AsHMM","KDE-ARHMM","KDE-BNHMM","HMM","AR-AsLG-HMM","KDE-AsHMM*"]
-graph_ranks(avg_rank, names, cd=cd, width=5, textspace=1.5)
+graph_ranks(avg_rank_6, names, cd=cd, width=5, textspace=1.5)
 
