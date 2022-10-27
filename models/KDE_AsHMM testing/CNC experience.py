@@ -298,13 +298,13 @@ def compute_CD(avranks, n, alpha="0.05", test="nemenyi"):
     cd = q[k] * (k * (k + 1) / (6.0 * n)) ** 0.5
     return cd
 
-def create_verdad(labels,llave,P):
+def create_verdad(labels,llave):
     T = len(labels)
     N = len(llave)
-    verdad  = np.ones([T-P,N])*1e-5
-    for t in range(T-P):
+    verdad  = np.ones([T,N])*1e-5
+    for t in range(T):
         for i in range(len(llave)):
-            if llave[i] == labels[t+P]:
+            if llave[i] == labels[t]:
                 verdad[t][i] = 1
     return verdad
     
@@ -349,7 +349,7 @@ for f in files:
     datasetf = np.concatenate([xdif, ydif, zdif, sdif],axis=0).T
     datasetf = datasetf+np.random.normal(0,0.5,datasetf.shape)
     datasets.append(datasetf)
-    verdadf = create_verdad(np.array(dataf[key]),llaves,P_u)
+    verdadf = create_verdad(np.array(dataf[key]),llaves)
     verdad.append(verdadf)
 labels_cnc= ["X-ActualPosition","Y-ActualPosition","Z-ActualPosition","Spindle-ActualPosition"]
 
@@ -366,7 +366,7 @@ fold4 = [10,16]
 fold5 = [11,17]
 folds = [fold1,fold2,fold3,fold4,fold5]
 #%% Data visualization
-model = kde(np.concatenate([datasets[10],datasets[16]],axis=0),int(n_states),P=0,v=np.concatenate([verdad[10],verdad[16]],axis=0),)
+model = kde(np.concatenate([datasets[10],datasets[16]],axis=0),int(n_states),P=1,v=np.concatenate([verdad[10],verdad[16]],axis=0),)
 model.plot_data_scatter()
 model.plot_all_pairs_scatter()
 #%% Training 
@@ -384,9 +384,10 @@ for i in range(len(folds)):
         dataset_i = np.concatenate([dataset_i,datasets[j]])
         verdadi = np.concatenate([verdadi,verdad[j]])
     verdadi = verdadi/np.sum(verdadi,axis=0)
+    verdadi = verdadi[P_u:]
     modeli = []
-    model1 = kde(dataset_i,n_states,P=P_u,v=verdadi)
-    model2 = kde(dataset_i,n_states,P=P_u,v=verdadi)
+    model1 = kde(dataset_i,n_states,P=P_u,v=verdadi,v_train=False)
+    model2 = kde(dataset_i,n_states,P=P_u,v=verdadi,v_train=False)
     model3 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=P_u)
     model4 = hmm(dataset_i,np.array([len(dataset_i)]),n_states,P=P_u)
     if train == True:
