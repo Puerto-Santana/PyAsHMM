@@ -15,7 +15,8 @@ import warnings
 warnings.filterwarnings("ignore")
 class KDE_AsHMM:    
     def __init__(self,O,N,A=None, pi=None, h= None, M=None, v=None, 
-                  p=None, P=None, G=None, p_cor=5,struc=True,lags=True):
+                  p=None, P=None, G=None, p_cor=5,struc=True,lags=True,
+                  v_train = True):
         """
         Generates an object of type KDE-AsHMM 
 
@@ -227,6 +228,9 @@ class KDE_AsHMM:
                     raise Exception("pi must hast one dimensions")
             else:
                 raise Exception("pi must be a numpy array")
+                
+        # Settinf the restriction for the optimization
+        self.v_train = v_train
                     
         
     def gaussian_kernel(self,x):
@@ -837,7 +841,8 @@ class KDE_AsHMM:
             self.A = self.act_A()
             self.pi = self.act_pi()
             h, v, M =  self.act_params(self.G,self.G,self.p,self.p)
-            self.v = v
+            if self.v_train == True:
+                self.v = v
             self.h = h
             self.M = M
             likelinew = np.sum(-self.forback[0].ll)
